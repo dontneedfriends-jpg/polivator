@@ -1,0 +1,159 @@
+{
+  "entries": [
+    {
+      "content": "[stdout]\nитого 4\ndrwxr-xr-x 1 annenskei annenskei  52 июн 14 13:12 .\ndrwxr-xr-x 1 annenskei annenskei  50 июн 14 13:11 ..\ndrwxr-xr-x 1 annenskei annenskei  72 июн 14 13:35 .clipper\ndrwxr-xr-x 1 annenskei annenskei 144 июн 14 13:34 .git\n-rw-r--r-- 1 annenskei annenskei  66 июн 14 13:11 .gitattributes",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433311542,
+      "metadata": {},
+      "id": "mem_1781433311543_1",
+      "frequency": 1,
+      "lastAccessed": 1781433311543,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Code agent: Created PlatformIO project structure for ESP32-S3 with Arduino framework, including platformio.ini, src/main.cpp, and library modules for Sensor, Calibration, Display, and WebServer.\nFiles: platformio.ini, src/main.cpp, lib/Sensor/Sensor.h, lib/Sensor/Sensor.cpp, lib/Calibration/Calibration.h, lib/Calibration/Calibration.cpp, lib/Display/Display.h, lib/Display/Display.cpp, lib/WebServer/WebServer.h, lib/WebServer/WebServer.cpp",
+      "type": "finding",
+      "tags": [
+        "code-agent",
+        "auto"
+      ],
+      "timestamp": 1781433341440,
+      "metadata": {},
+      "id": "mem_1781433341440_2",
+      "frequency": 1,
+      "lastAccessed": 1781433341440,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Created PlatformIO project structure for ESP32-S3 with Arduino framework, including platformio.ini, src/main.cpp, and library modules for Sensor, Calibration, Display, and WebServer.",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "code"
+      ],
+      "timestamp": 1781433341441,
+      "metadata": {},
+      "id": "mem_1781433341441_3",
+      "frequency": 1,
+      "lastAccessed": 1781433341441,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Code agent: Replaced generic Sensor class with capacitive soil moisture sensor implementation using ADC on ESP32-S3.\nFiles: lib/Sensor/Sensor.h, lib/Sensor/Sensor.cpp\nBackup: /home/annenskei/Документы/GitHub/polivator/.clipper/backups/agent_1781433379592",
+      "type": "finding",
+      "tags": [
+        "code-agent",
+        "auto"
+      ],
+      "timestamp": 1781433379594,
+      "metadata": {},
+      "id": "mem_1781433379594_4",
+      "frequency": 1,
+      "lastAccessed": 1781433379594,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Replaced generic Sensor class with capacitive soil moisture sensor implementation using ADC on ESP32-S3.",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "code"
+      ],
+      "timestamp": 1781433379595,
+      "metadata": {},
+      "id": "mem_1781433379595_5",
+      "frequency": 1,
+      "lastAccessed": 1781433379595,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Code agent: Replaced Calibration.h and Calibration.cpp with new implementation using Preferences NVS storage. Added begin(), get/setDryValue/WetValue, resetToDefaults methods. Removed unused load/save/apply. Uses default values 3000 and 1200 for dry and wet respectively.\nFiles: lib/Calibration/Calibration.h, lib/Calibration/Calibration.cpp\nBackup: /home/annenskei/Документы/GitHub/polivator/.clipper/backups/agent_1781433410001",
+      "type": "finding",
+      "tags": [
+        "code-agent",
+        "auto"
+      ],
+      "timestamp": 1781433410002,
+      "metadata": {},
+      "id": "mem_1781433410002_6",
+      "frequency": 1,
+      "lastAccessed": 1781433410002,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Replaced Calibration.h and Calibration.cpp with new implementation using Preferences NVS storage. Added begin(), get/setDryValue/WetValue, resetToDefaults methods. Removed unused load/save/apply. Uses default values 3000 and 1200 for dry and wet respectively.",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "code"
+      ],
+      "timestamp": 1781433410003,
+      "metadata": {},
+      "id": "mem_1781433410003_7",
+      "frequency": 1,
+      "lastAccessed": 1781433410003,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Code agent: Implement Display class for WeActStudio 2.13\" e-ink display using GxEPD2 library. Added pin definitions, full screen drawing methods for status, calibration, and message display, and deepSleep function.\nFiles: lib/Display/Display.h, lib/Display/Display.cpp\nBackup: /home/annenskei/Документы/GitHub/polivator/.clipper/backups/agent_1781433467344",
+      "type": "finding",
+      "tags": [
+        "code-agent",
+        "auto"
+      ],
+      "timestamp": 1781433467345,
+      "metadata": {},
+      "id": "mem_1781433467345_8",
+      "frequency": 1,
+      "lastAccessed": 1781433467345,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Implement Display class for WeActStudio 2.13\" e-ink display using GxEPD2 library. Added pin definitions, full screen drawing methods for status, calibration, and message display, and deepSleep function.",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "code"
+      ],
+      "timestamp": 1781433467345,
+      "metadata": {},
+      "id": "mem_1781433467345_9",
+      "frequency": 1,
+      "lastAccessed": 1781433467345,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    }
+  ],
+  "wings": [],
+  "rooms": []
+}
