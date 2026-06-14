@@ -190,9 +190,9 @@ canvas {
   function updateMetrics(status) {
     document.getElementById('rawAdc').textContent = status.raw;
     document.getElementById('voltage').textContent = status.voltage.toFixed(2) + 'V';
-    document.getElementById('dryThresh').textContent = status.dry;
-    document.getElementById('wetThresh').textContent = status.wet;
-    document.getElementById('wifiStatus').textContent = status.wifi;
+    document.getElementById('dryThresh').textContent = status.dryThreshold;
+    document.getElementById('wetThresh').textContent = status.wetThreshold;
+    document.getElementById('wifiStatus').textContent = status.wifiStatus;
   }
 
   function drawChart() {
@@ -256,13 +256,13 @@ canvas {
       });
   }
   document.getElementById('btnDry').addEventListener('click', function() {
-    postAndMessage('/api/calibrate/dry', 'Dry threshold set!');
+    postAndMessage('/calibrate-dry', 'Dry threshold set!');
   });
   document.getElementById('btnWet').addEventListener('click', function() {
-    postAndMessage('/api/calibrate/wet', 'Wet threshold set!');
+    postAndMessage('/calibrate-wet', 'Wet threshold set!');
   });
   document.getElementById('btnReset').addEventListener('click', function() {
-    postAndMessage('/api/calibrate/reset', 'Calibration reset!');
+    postAndMessage('/reset-calibration', 'Calibration reset!');
   });
 
   // Initialize chart with empty data
