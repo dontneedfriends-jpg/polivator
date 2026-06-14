@@ -21,9 +21,7 @@ int Sensor::readPercent() {
   int raw = readRaw();
   if (raw <= m_wetValue) return 100;
   if (raw >= m_dryValue) return 0;
-  int range = m_dryValue - m_wetValue;
-  if (range == 0) return 0;
-  return (m_dryValue - raw) * 100 / range;
+  return (m_dryValue - raw) * 100 / (m_dryValue - m_wetValue);
 }
 
 float Sensor::readVoltage() {

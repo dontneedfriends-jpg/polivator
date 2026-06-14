@@ -36,29 +36,8 @@ void loop() {
       calibrating = !calibrating;
       if (calibrating) {
         Serial.println("Calibration mode: ON");
-        display.showCalibrationScreen();
       } else {
         Serial.println("Calibration mode: OFF");
-      }
-    }
-    if (calibrating) {
-      if (c == 'd') {
-        int raw = sensor.readRaw();
-        calibration.setDryValue(raw);
-        sensor.setCalibration(calibration.getDryValue(), calibration.getWetValue());
-        display.showMessage("Dry calibration set");
-        Serial.println("Dry calibration set");
-      } else if (c == 'w') {
-        int raw = sensor.readRaw();
-        calibration.setWetValue(raw);
-        sensor.setCalibration(calibration.getDryValue(), calibration.getWetValue());
-        display.showMessage("Wet calibration set");
-        Serial.println("Wet calibration set");
-      } else if (c == 'r') {
-        calibration.reset();
-        sensor.setCalibration(calibration.getDryValue(), calibration.getWetValue());
-        display.showMessage("Calibration reset");
-        Serial.println("Calibration reset");
       }
     }
   }
@@ -75,11 +54,7 @@ void loop() {
   }
 
   if (now - lastDisplayUpdate >= 10000) {
-    if (calibrating) {
-      display.showCalibrationScreen();
-    } else {
-      display.showStatus(lastMoisture, lastRaw, calibrating, lastWifiStatus.c_str());
-    }
+    display.showStatus(lastMoisture, lastRaw, calibrating, lastWifiStatus.c_str());
     lastDisplayUpdate = now;
   }
 

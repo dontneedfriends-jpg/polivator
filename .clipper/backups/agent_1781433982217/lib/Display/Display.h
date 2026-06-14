@@ -30,7 +30,7 @@ public:
   ~Display();
   void begin();
   void showStatus(float moisturePercent, int rawValue, bool calibrating, const char* wifiStatus);
-  void showCalibrationScreen(const char* step = "");
+  void showCalibrationScreen(const char* step);
   void showMessage(const char* msg);
   void deepSleep();
 

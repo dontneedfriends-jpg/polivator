@@ -58,19 +58,17 @@ void Display::showCalibrationScreen(const char* step) {
   m_display.setTextColor(GxEPD_BLACK);
   m_display.setFont(&FreeSans12pt7b);
   
-  int16_t tbx, tby; uint16_t tbw, tbh;
   // Center "Calibrating..." at top
+  int16_t tbx, tby; uint16_t tbw, tbh;
   m_display.getTextBounds("Calibrating...", 0, 0, &tbx, &tby, &tbw, &tbh);
   m_display.setCursor((m_display.width() - tbw) / 2, tbh + 10);
   m_display.println("Calibrating...");
   
-  // Display step below if provided
-  if (step && step[0]) {
-    m_display.setFont(&FreeSans9pt7b);
-    m_display.getTextBounds(step, 0, 0, &tbx, &tby, &tbw, &tbh);
-    m_display.setCursor((m_display.width() - tbw) / 2, m_display.height() / 2);
-    m_display.println(step);
-  }
+  // Display step below
+  m_display.setFont(&FreeSans9pt7b);
+  m_display.getTextBounds(step, 0, 0, &tbx, &tby, &tbw, &tbh);
+  m_display.setCursor((m_display.width() - tbw) / 2, m_display.height() / 2);
+  m_display.println(step);
   
   m_display.display(false);
 }
