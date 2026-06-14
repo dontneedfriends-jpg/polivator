@@ -29634,6 +29634,150 @@
       "wing": "default",
       "room": "default",
       "drawer": "memory"
+    },
+    {
+      "content": "Документация будет создана на русском языке, в формате README.md, охватывающая все аспекты проекта.",
+      "type": "decision",
+      "tags": [
+        "documentation",
+        "russian",
+        "readme",
+        "compressed"
+      ],
+      "timestamp": 1781446715170,
+      "metadata": {},
+      "id": "mem_1781446715170_9",
+      "frequency": 1,
+      "lastAccessed": 1781446715170,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Проект представляет собой монитор влажности почвы на ESP32-S3 с ёмкостным датчиком, e-ink дисплеем, веб-сервером и калибровкой.",
+      "type": "architecture",
+      "tags": [
+        "project-overview",
+        "esp32-s3",
+        "moisture-sensor",
+        "compressed"
+      ],
+      "timestamp": 1781446715214,
+      "metadata": {},
+      "id": "mem_1781446715214_10",
+      "frequency": 1,
+      "lastAccessed": 1781446715214,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Планируется включить следующие разделы: обзор, железо, подключение, софт, WiFi, веб-интерфейс, калибровка, serial команды, API, структура проекта, расширение, неисправности, лицензия.",
+      "type": "finding",
+      "tags": [
+        "readme-sections",
+        "plan",
+        "compressed"
+      ],
+      "timestamp": 1781446715266,
+      "metadata": {},
+      "id": "mem_1781446715266_11",
+      "frequency": 1,
+      "lastAccessed": 1781446715266,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Проект модульный, может быть расширен до системы автополива.",
+      "type": "architecture",
+      "tags": [
+        "modular",
+        "extensibility",
+        "compressed"
+      ],
+      "timestamp": 1781446715301,
+      "metadata": {},
+      "id": "mem_1781446715301_12",
+      "frequency": 1,
+      "lastAccessed": 1781446715301,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read README.md (lines 1-59 of 59, 2998 bytes)\n 1: # Датчик влажности почвы (Polivator)\n 2: \n 3: ## Возможности\n 4: \n 5: - Измерение влажности почвы с помощью емкостного датчика\n 6: - Отображение процента влажности и сырого значения на e-ink дисплее\n 7: - Веб-интерфейс для просмотра статуса и калибро",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781446718063,
+      "metadata": {},
+      "id": "mem_1781446718063_13",
+      "frequency": 1,
+      "lastAccessed": 1781446718063,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Веб-интерфейс реализован как единый HTML-файл в виде PROGMEM-строки в lib/WebServer/index.h.",
+      "type": "architecture",
+      "tags": [
+        "web-ui",
+        "frontend",
+        "compressed"
+      ],
+      "timestamp": 1781446800103,
+      "metadata": {},
+      "id": "mem_1781446800103_14",
+      "frequency": 1,
+      "lastAccessed": 1781446800103,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "События SSE отправляются асинхронно через AsyncEventSource с типом 'status'.",
+      "type": "decision",
+      "tags": [
+        "realtime",
+        "sse",
+        "compressed"
+      ],
+      "timestamp": 1781446800154,
+      "metadata": {},
+      "id": "mem_1781446800154_15",
+      "frequency": 1,
+      "lastAccessed": 1781446800154,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Проект использует классы: Sensor (i2c ADC), Display (e-ink), WebServer (веб), EEPROM (калибровка).",
+      "type": "architecture",
+      "tags": [
+        "structure",
+        "compressed"
+      ],
+      "timestamp": 1781446800221,
+      "metadata": {},
+      "id": "mem_1781446800221_16",
+      "frequency": 1,
+      "lastAccessed": 1781446800221,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
     }
   ],
   "wings": [],
