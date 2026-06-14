@@ -4,7 +4,6 @@
 #include "Sensor.h"
 #include "Calibration.h"
 #include "Display.h"
-#include "index.h"
 
 WebServer::WebServer(Sensor* sensor, Calibration* calibration, Display* display)
   : m_sensor(sensor), m_calibration(calibration), m_display(display), server(80) {
@@ -47,19 +46,6 @@ void WebServer::stop() {
   }
 }
 
-void WebServer::sendStatusEvent(float moisture, int raw, float voltage, uint16_t dry, uint16_t wet) {
-  DynamicJsonDocument doc(256);
-  doc["moisture"] = moisture;
-  doc["raw"] = raw;
-  doc["voltage"] = voltage;
-  doc["dry"] = dry;
-  doc["wet"] = wet;
-  doc["wifi"] = WiFi.status() == WL_CONNECTED ? "connected" : (WiFi.getMode() == WIFI_AP ? "ap" : "disconnected");
-  String output;
-  serializeJson(doc, output);
-  events.send(output.c_str(), "status", millis());
-}
-
 bool WebServer::connectToSavedWiFi() {
   String ssid = preferences.getString("ssid", "");
   String pass = preferences.getString("pass", "");
@@ -86,9 +72,13 @@ void WebServer::setupAP() {
 }
 
 void WebServer::setupRoutes() {
-  // Root: serve the web UI page
+  // Root: redirect to /wifi when in AP mode, else show status
   server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
-    request->send(200, "text/html", index_html_content);
+    if (WiFi.getMode() == WIFI_AP) {
+      request->redirect("/wifi");
+    } else {
+      request->redirect("/api/status");
+    }
   });
   
   // GET /api/status

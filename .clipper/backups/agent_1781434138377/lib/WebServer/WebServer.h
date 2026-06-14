@@ -17,7 +17,6 @@ public:
   void begin();
   void handleClient();
   void stop();
-  void sendStatusEvent(float moisture, int raw, float voltage, uint16_t dry, uint16_t wet);
 
 private:
   void setupAP();
