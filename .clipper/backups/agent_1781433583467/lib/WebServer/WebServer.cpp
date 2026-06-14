@@ -1,9 +1,6 @@
 #include "WebServer.h"
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "Sensor.h"
-#include "Calibration.h"
-#include "Display.h"
 
 WebServer::WebServer(Sensor* sensor, Calibration* calibration, Display* display)
   : m_sensor(sensor), m_calibration(calibration), m_display(display), server(80) {
@@ -85,11 +82,11 @@ void WebServer::setupRoutes() {
   server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) {
     AsyncResponseStream *response = request->beginResponseStream("application/json");
     DynamicJsonDocument doc(256);
-    doc["moisture"] = m_sensor->readPercent();
-    doc["raw"] = m_sensor->readRaw();
-    doc["voltage"] = m_sensor->readVoltage();
-    doc["dry"] = m_calibration->getDryValue();
-    doc["wet"] = m_calibration->getWetValue();
+    doc["moisture"] = m_sensor->getMoisture();
+    doc["raw"] = m_sensor->getRaw();
+    doc["voltage"] = m_sensor->getVoltage();
+    doc["dry"] = m_calibration->getDry();
+    doc["wet"] = m_calibration->getWet();
     doc["wifi"] = WiFi.status() == WL_CONNECTED ? "connected" : (WiFi.getMode() == WIFI_AP ? "ap" : "disconnected");
     serializeJson(doc, *response);
     request->send(response);
@@ -97,21 +94,21 @@ void WebServer::setupRoutes() {
   
   // POST /api/calibrate/dry
   server.on("/api/calibrate/dry", HTTP_POST, [this](AsyncWebServerRequest *request) {
-    int raw = m_sensor->readRaw();
-    m_calibration->setDryValue(raw);
+    int raw = m_sensor->getRaw();
+    m_calibration->setDry(raw);
     request->send(200, "text/plain", "Dry threshold set");
   });
   
   // POST /api/calibrate/wet
   server.on("/api/calibrate/wet", HTTP_POST, [this](AsyncWebServerRequest *request) {
-    int raw = m_sensor->readRaw();
-    m_calibration->setWetValue(raw);
+    int raw = m_sensor->getRaw();
+    m_calibration->setWet(raw);
     request->send(200, "text/plain", "Wet threshold set");
   });
   
   // POST /api/calibrate/reset
   server.on("/api/calibrate/reset", HTTP_POST, [this](AsyncWebServerRequest *request) {
-    m_calibration->resetToDefaults();
+    m_calibration->reset();
     request->send(200, "text/plain", "Calibration reset");
   });
   
@@ -119,8 +116,8 @@ void WebServer::setupRoutes() {
   server.on("/api/calibration", HTTP_GET, [this](AsyncWebServerRequest *request) {
     AsyncResponseStream *response = request->beginResponseStream("application/json");
     DynamicJsonDocument doc(128);
-    doc["dry"] = m_calibration->getDryValue();
-    doc["wet"] = m_calibration->getWetValue();
+    doc["dry"] = m_calibration->getDry();
+    doc["wet"] = m_calibration->getWet();
     serializeJson(doc, *response);
     request->send(response);
   });

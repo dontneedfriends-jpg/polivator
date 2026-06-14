@@ -1,16 +1,35 @@
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
+#include <ESPAsyncWebServer.h>
+#include <DNSServer.h>
+#include <WiFi.h>
+#include <Preferences.h>
+
+class Sensor;
+class Calibration;
+class Display;
+
 class WebServer {
 public:
-  WebServer();
+  WebServer(Sensor* sensor, Calibration* calibration, Display* display);
   ~WebServer();
   void begin();
   void handleClient();
-  void sendData(float moisture, float temp, float humidity);
+  void stop();
 
 private:
-  // Web server members
+  void setupAP();
+  bool connectToSavedWiFi();
+  void setupRoutes();
+
+  AsyncWebServer server;
+  AsyncEventSource events;
+  DNSServer dnsServer;
+  Sensor* m_sensor;
+  Calibration* m_calibration;
+  Display* m_display;
+  Preferences preferences;
 };
 
 #endif // WEBSERVER_H
