@@ -24,7 +24,7 @@ private:
   void setupRoutes();
 
   AsyncWebServer server;
-  AsyncEventSource events{"/events"};
+  AsyncEventSource events;
   DNSServer dnsServer;
   Sensor* m_sensor;
   Calibration* m_calibration;

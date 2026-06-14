@@ -424,6 +424,142 @@
       "wing": "default",
       "room": "default",
       "drawer": "memory"
+    },
+    {
+      "content": "Read platformio.ini (lines 1-11 of 11, 192 bytes)\n 1: [env:esp32-s3-devkitc-1]\n 2: platform = espressif32\n 3: board = esp32-s3-devkitc-1\n 4: framework = arduino\n 5: monitor_speed = 115200\n 6: lib_deps = \n 7:     GxEPD2\n 8:     ESPAsyncWebServer\n 9:     AsyncTCP\n10:     ArduinoJson\n11: ",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433717714,
+      "metadata": {},
+      "id": "mem_1781433717714_26",
+      "frequency": 1,
+      "lastAccessed": 1781433717714,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read lib/WebServer/WebServer.h (lines 1-36 of 36, 637 bytes)\n 1: #ifndef WEBSERVER_H\n 2: #define WEBSERVER_H\n 3: \n 4: #include <ESPAsyncWebServer.h>\n 5: #include <DNSServer.h>\n 6: #include <WiFi.h>\n 7: #include <Preferences.h>\n 8: \n 9: class Sensor;\n10: class Calibration;\n11: class Display;\n12: \n13:",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433729124,
+      "metadata": {},
+      "id": "mem_1781433729124_27",
+      "frequency": 1,
+      "lastAccessed": 1781433729124,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read lib/Calibration/Calibration.h (lines 1-23 of 23, 457 bytes)\n 1: #ifndef CALIBRATION_H\n 2: #define CALIBRATION_H\n 3: \n 4: #include <Preferences.h>\n 5: \n 6: class Calibration {\n 7: public:\n 8:     Calibration();\n 9:     void begin();\n10:     uint16_t getDryValue();\n11:     uint16_t getWetValue();",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433738707,
+      "metadata": {},
+      "id": "mem_1781433738707_28",
+      "frequency": 1,
+      "lastAccessed": 1781433738707,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read src/main.cpp (lines 1-63 of 63, 1682 bytes)\n 1: #include <Arduino.h>\n 2: #include <WiFi.h>\n 3: #include \"Sensor.h\"\n 4: #include \"Calibration.h\"\n 5: #include \"Display.h\"\n 6: #include \"WebServer.h\"\n 7: \n 8: Sensor sensor(4);\n 9: Calibration calibration;\n10: Display display;\n11: WebServer webServe",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433741472,
+      "metadata": {},
+      "id": "mem_1781433741472_29",
+      "frequency": 1,
+      "lastAccessed": 1781433741472,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Code agent: Changed AsyncEventSource declaration to use in-class initializer with URL path \"/events\".\nFiles: lib/WebServer/WebServer.h\nBackup: /home/annenskei/Документы/GitHub/polivator/.clipper/backups/agent_1781433765114",
+      "type": "finding",
+      "tags": [
+        "code-agent",
+        "auto"
+      ],
+      "timestamp": 1781433765115,
+      "metadata": {},
+      "id": "mem_1781433765115_30",
+      "frequency": 1,
+      "lastAccessed": 1781433765115,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Changed AsyncEventSource declaration to use in-class initializer with URL path \"/events\".",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "code"
+      ],
+      "timestamp": 1781433765116,
+      "metadata": {},
+      "id": "mem_1781433765116_31",
+      "frequency": 1,
+      "lastAccessed": 1781433765116,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Code agent: Added SPI.begin with custom pins and updated GxEPD2::init call to include SPI frequency and MOSI/MISO parameters, ensuring correct SPI pin configuration for the e-ink display.\nFiles: lib/Display/Display.cpp, lib/Display/Display.cpp\nBackup: /home/annenskei/Документы/GitHub/polivator/.clipper/backups/agent_1781433865478",
+      "type": "finding",
+      "tags": [
+        "code-agent",
+        "auto"
+      ],
+      "timestamp": 1781433865479,
+      "metadata": {},
+      "id": "mem_1781433865479_32",
+      "frequency": 1,
+      "lastAccessed": 1781433865479,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Added SPI.begin with custom pins and updated GxEPD2::init call to include SPI frequency and MOSI/MISO parameters, ensuring correct SPI pin configuration for the e-ink display.",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "code"
+      ],
+      "timestamp": 1781433865481,
+      "metadata": {},
+      "id": "mem_1781433865481_33",
+      "frequency": 1,
+      "lastAccessed": 1781433865481,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
     }
   ],
   "wings": [],

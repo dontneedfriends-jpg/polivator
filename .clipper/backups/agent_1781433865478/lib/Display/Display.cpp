@@ -1,5 +1,4 @@
 #include "Display.h"
-#include <SPI.h>
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
 
@@ -11,10 +10,8 @@ Display::~Display() {
 }
 
 void Display::begin() {
-  // Initialize SPI with custom pins
-  SPI.begin(EINK_SCLK, -1, EINK_MOSI, -1);
   // Initialize the display
-  m_display.init(115200, true, 4000000, EINK_MOSI, -1);
+  m_display.init(115200); // 115200 baud for serial debug, use default SPI speed
   // Configure for landscape orientation
   m_display.setRotation(1);
   // Fill with white and display
