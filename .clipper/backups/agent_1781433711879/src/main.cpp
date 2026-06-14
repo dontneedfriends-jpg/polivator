@@ -18,29 +18,15 @@ void setup() {
   // Load calibration into sensor
   sensor.setCalibration(calibration.getDryValue(), calibration.getWetValue());
   webServer.begin();
-  display.showStatus(sensor.readPercent(), sensor.readRaw(), false, WiFi.status() == WL_CONNECTED ? "connected" : "disconnected");
+  display.update(sensor.readPercent(), sensor.readRaw(), WiFi.status() == WL_CONNECTED ? "connected" : "disconnected");
 }
 
 void loop() {
   static unsigned long lastSensorRead = 0;
   static unsigned long lastDisplayUpdate = 0;
-  static float lastMoisture = 0.0f;
+  static int lastMoisture = 0;
   static int lastRaw = 0;
   static String lastWifiStatus = "disconnected";
-  static bool calibrating = false;
-
-  // Handle serial commands for calibration
-  if (Serial.available()) {
-    char c = Serial.read();
-    if (c == 'c' || c == 'C') {
-      calibrating = !calibrating;
-      if (calibrating) {
-        Serial.println("Calibration mode: ON");
-      } else {
-        Serial.println("Calibration mode: OFF");
-      }
-    }
-  }
 
   webServer.handleClient();
 
@@ -54,9 +40,7 @@ void loop() {
   }
 
   if (now - lastDisplayUpdate >= 10000) {
-    display.showStatus(lastMoisture, lastRaw, calibrating, lastWifiStatus.c_str());
+    display.update(lastMoisture, lastRaw, lastWifiStatus);
     lastDisplayUpdate = now;
   }
-
-  delay(10);
 }

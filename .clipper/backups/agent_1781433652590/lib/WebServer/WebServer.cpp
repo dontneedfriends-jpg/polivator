@@ -99,7 +99,6 @@ void WebServer::setupRoutes() {
   server.on("/api/calibrate/dry", HTTP_POST, [this](AsyncWebServerRequest *request) {
     int raw = m_sensor->readRaw();
     m_calibration->setDryValue(raw);
-    m_sensor->setCalibration(m_calibration->getDryValue(), m_calibration->getWetValue());
     request->send(200, "text/plain", "Dry threshold set");
   });
   
@@ -107,14 +106,12 @@ void WebServer::setupRoutes() {
   server.on("/api/calibrate/wet", HTTP_POST, [this](AsyncWebServerRequest *request) {
     int raw = m_sensor->readRaw();
     m_calibration->setWetValue(raw);
-    m_sensor->setCalibration(m_calibration->getDryValue(), m_calibration->getWetValue());
     request->send(200, "text/plain", "Wet threshold set");
   });
   
   // POST /api/calibrate/reset
   server.on("/api/calibrate/reset", HTTP_POST, [this](AsyncWebServerRequest *request) {
     m_calibration->resetToDefaults();
-    m_sensor->setCalibration(m_calibration->getDryValue(), m_calibration->getWetValue());
     request->send(200, "text/plain", "Calibration reset");
   });
   

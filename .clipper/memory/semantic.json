@@ -254,6 +254,176 @@
       "wing": "default",
       "room": "default",
       "drawer": "memory"
+    },
+    {
+      "content": "Code agent: Created src/main.cpp with full implementation including global objects and proper timing. Updated WebServer.cpp to sync calibration changes to sensor after dry/wet/reset routes.\nFiles: src/main.cpp\nErrors: lib/WebServer/WebServer.cpp: oldString not found in lib/WebServer/WebServer.cpp (tried exact, fuzzy, and AST match)\nBackup: /home/annenskei/Документы/GitHub/polivator/.clipper/backups/agent_1781433652590",
+      "type": "finding",
+      "tags": [
+        "code-agent",
+        "auto"
+      ],
+      "timestamp": 1781433652637,
+      "metadata": {},
+      "id": "mem_1781433652637_16",
+      "frequency": 1,
+      "lastAccessed": 1781433652637,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Created src/main.cpp with full implementation including global objects and proper timing. Updated WebServer.cpp to sync calibration changes to sensor after dry/wet/reset routes.",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "code"
+      ],
+      "timestamp": 1781433652638,
+      "metadata": {},
+      "id": "mem_1781433652638_17",
+      "frequency": 1,
+      "lastAccessed": 1781433652638,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read lib/WebServer/WebServer.cpp (lines 98-117 of 186, 5716 bytes)\n 98:   // POST /api/calibrate/dry\n 99:   server.on(\"/api/calibrate/dry\", HTTP_POST, [this](AsyncWebServerRequest *request) {\n100:     int raw = m_sensor->readRaw();\n101:     m_calibration->setDryValue(raw);\n102:     request->send(200",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433655233,
+      "metadata": {},
+      "id": "mem_1781433655233_18",
+      "frequency": 1,
+      "lastAccessed": 1781433655233,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Written 189 lines, 5986 bytes to lib/WebServer/WebServer.cpp",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433669897,
+      "metadata": {},
+      "id": "mem_1781433669897_19",
+      "frequency": 1,
+      "lastAccessed": 1781433669897,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read src/main.cpp (lines 1-47 of 47, 1270 bytes)\n 1: #include <Arduino.h>\n 2: #include <WiFi.h>\n 3: #include \"Sensor.h\"\n 4: #include \"Calibration.h\"\n 5: #include \"Display.h\"\n 6: #include \"WebServer.h\"\n 7: \n 8: Sensor sensor(4);\n 9: Calibration calibration;\n10: Display display;\n11: WebServer webServe",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433672065,
+      "metadata": {},
+      "id": "mem_1781433672065_20",
+      "frequency": 1,
+      "lastAccessed": 1781433672065,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read lib/Display/Display.h (lines 1-42 of 42, 776 bytes)\n 1: #ifndef DISPLAY_H\n 2: #define DISPLAY_H\n 3: \n 4: #include <GxEPD2_BW.h>\n 5: #include <GxEPD2_213_BN.h>\n 6: \n 7: // Default SPI pins for ESP32-S3 WeActStudio e-ink display\n 8: #ifndef EINK_CS\n 9: #define EINK_CS 10\n10: #endif\n11: #ifndef EI",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433674811,
+      "metadata": {},
+      "id": "mem_1781433674811_21",
+      "frequency": 1,
+      "lastAccessed": 1781433674811,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read lib/Display/Display.cpp (lines 1-91 of 91, 2817 bytes)\n 1: #include \"Display.h\"\n 2: #include <Fonts/FreeSans9pt7b.h>\n 3: #include <Fonts/FreeSans12pt7b.h>\n 4: \n 5: // Constructor: initialize display with default pins\n 6: Display::Display() : m_display(EINK_CS, EINK_DC, EINK_RST, EINK_BUSY) {\n 7",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433677929,
+      "metadata": {},
+      "id": "mem_1781433677929_22",
+      "frequency": 1,
+      "lastAccessed": 1781433677929,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Read lib/Sensor/Sensor.h (lines 1-21 of 21, 310 bytes)\n 1: #ifndef SENSOR_H\n 2: #define SENSOR_H\n 3: \n 4: class Sensor {\n 5: public:\n 6:   Sensor(int pin);\n 7:   void begin();\n 8:   int readRaw();\n 9:   int readPercent();\n10:   float readVoltage();\n11:   void setCalibration(int dry, int wet);\n12: \n1",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "tool"
+      ],
+      "timestamp": 1781433684102,
+      "metadata": {},
+      "id": "mem_1781433684102_23",
+      "frequency": 1,
+      "lastAccessed": 1781433684102,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Code agent: Fixed main.cpp: changed display.update to display.showStatus with proper parameters (added calibrating bool), changed lastMoisture type to float, added serial toggle for calibration mode, and added delay(10) in loop.\nFiles: src/main.cpp, src/main.cpp\nBackup: /home/annenskei/Документы/GitHub/polivator/.clipper/backups/agent_1781433711879",
+      "type": "finding",
+      "tags": [
+        "code-agent",
+        "auto"
+      ],
+      "timestamp": 1781433711880,
+      "metadata": {},
+      "id": "mem_1781433711880_24",
+      "frequency": 1,
+      "lastAccessed": 1781433711880,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Fixed main.cpp: changed display.update to display.showStatus with proper parameters (added calibrating bool), changed lastMoisture type to float, added serial toggle for calibration mode, and added delay(10) in loop.",
+      "type": "finding",
+      "tags": [
+        "auto",
+        "code"
+      ],
+      "timestamp": 1781433711881,
+      "metadata": {},
+      "id": "mem_1781433711881_25",
+      "frequency": 1,
+      "lastAccessed": 1781433711881,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
     }
   ],
   "wings": [],
