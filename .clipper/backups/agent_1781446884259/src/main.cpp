@@ -5,7 +5,7 @@
 #include "Display.h"
 #include "WebServer.h"
 
-Sensor sensor(2);
+Sensor sensor(4);
 Calibration calibration;
 Display display;
 WebServer webServer(&sensor, &calibration, &display);

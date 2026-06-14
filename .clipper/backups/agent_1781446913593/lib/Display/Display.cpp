@@ -11,10 +11,13 @@ Display::~Display() {
 }
 
 void Display::begin() {
-  // Initialize SPI with custom pins, including CS for proper SPI configuration
-  SPI.begin(EINK_SCLK, -1, EINK_MOSI, EINK_CS);
+  // Initialize SPI with custom pins
+  SPI.begin(EINK_SCLK, -1, EINK_MOSI, -1);
   // Initialize the display
   m_display.init(115200, true, 4000000, EINK_MOSI, -1);
+  // Set SPI pins explicitly
+  m_display.setMosi(EINK_MOSI);
+  m_display.setSck(EINK_SCLK);
   // Configure for landscape orientation
   m_display.setRotation(1);
   // Fill with white and display

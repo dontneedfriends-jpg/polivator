@@ -6,22 +6,22 @@
 
 // Default SPI pins for ESP32-S3 WeActStudio e-ink display
 #ifndef EINK_CS
-#define EINK_CS 5
+#define EINK_CS 10
 #endif
 #ifndef EINK_DC
-#define EINK_DC 17
+#define EINK_DC 9
 #endif
 #ifndef EINK_RST
-#define EINK_RST 16
+#define EINK_RST 8
 #endif
 #ifndef EINK_BUSY
-#define EINK_BUSY 4
+#define EINK_BUSY 7
 #endif
 #ifndef EINK_MOSI
-#define EINK_MOSI 23
+#define EINK_MOSI 11
 #endif
 #ifndef EINK_SCLK
-#define EINK_SCLK 18
+#define EINK_SCLK 12
 #endif
 
 class Display {
