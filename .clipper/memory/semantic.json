@@ -29496,6 +29496,144 @@
       "wing": "default",
       "room": "default",
       "drawer": "memory"
+    },
+    {
+      "content": "Использована модульная архитектура с отдельными библиотеками: Sensor, Display, Calibration, WebServer.",
+      "type": "architecture",
+      "tags": [
+        "architecture",
+        "compressed"
+      ],
+      "timestamp": 1781446705082,
+      "metadata": {},
+      "id": "mem_1781446705082_1",
+      "frequency": 1,
+      "lastAccessed": 1781446705082,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Decision: веб-сервер на ESPAsyncWebServer с SSE для реального времени.",
+      "type": "decision",
+      "tags": [
+        "web",
+        "sse",
+        "compressed"
+      ],
+      "timestamp": 1781446705123,
+      "metadata": {},
+      "id": "mem_1781446705123_2",
+      "frequency": 1,
+      "lastAccessed": 1781446705123,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Decision: тёмная тема, SVG-индикатор, canvas график в UI.",
+      "type": "decision",
+      "tags": [
+        "ui",
+        "compressed"
+      ],
+      "timestamp": 1781446705156,
+      "metadata": {},
+      "id": "mem_1781446705156_3",
+      "frequency": 1,
+      "lastAccessed": 1781446705156,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Bug: отсутствовал аргумент в showCalibrationScreen -> исправлено добавлением пустой строки по умолчанию.",
+      "type": "bug",
+      "tags": [
+        "bug-fix",
+        "compressed"
+      ],
+      "timestamp": 1781446705197,
+      "metadata": {},
+      "id": "mem_1781446705197_4",
+      "frequency": 1,
+      "lastAccessed": 1781446705197,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Error pattern: в начальной версии index.h использованы неверные URL и имена полей -> исправлены на /api/calibrate/* и dry/wet/wifi.",
+      "type": "error_pattern",
+      "tags": [
+        "web-api",
+        "compressed"
+      ],
+      "timestamp": 1781446705249,
+      "metadata": {},
+      "id": "mem_1781446705249_5",
+      "frequency": 1,
+      "lastAccessed": 1781446705249,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Finding: ADC значения датчика ~1200-3000, пороги по умолчанию dry=3000, wet=1200.",
+      "type": "finding",
+      "tags": [
+        "sensor",
+        "calibration",
+        "compressed"
+      ],
+      "timestamp": 1781446705287,
+      "metadata": {},
+      "id": "mem_1781446705287_6",
+      "frequency": 1,
+      "lastAccessed": 1781446705287,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Пороги калибровки хранятся в NVS.",
+      "type": "architecture",
+      "tags": [
+        "storage",
+        "compressed"
+      ],
+      "timestamp": 1781446705319,
+      "metadata": {},
+      "id": "mem_1781446705319_7",
+      "frequency": 1,
+      "lastAccessed": 1781446705319,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
+    },
+    {
+      "content": "Main цикл: чтение каждые 2с, отправка SSE, обновление дисплея каждые 10с.",
+      "type": "architecture",
+      "tags": [
+        "timing",
+        "compressed"
+      ],
+      "timestamp": 1781446705350,
+      "metadata": {},
+      "id": "mem_1781446705350_8",
+      "frequency": 1,
+      "lastAccessed": 1781446705350,
+      "projectCount": 1,
+      "wing": "default",
+      "room": "default",
+      "drawer": "memory"
     }
   ],
   "wings": [],
