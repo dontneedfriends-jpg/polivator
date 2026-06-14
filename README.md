@@ -1,18 +1,18 @@
-# Plant Moisture Sensor (Polivator)
+# Датчик влажности почвы (Polivator)
 
-## Features
+## Возможности
 
-- Measures soil moisture using capacitive sensor
-- Displays moisture percentage and raw value on e-ink display
-- Web interface for status and calibration
-- Serial commands for calibration
-- WiFi connectivity with captive portal for configuration
-- Persistent calibration stored in NVS
-- Deep sleep support (optional)
+- Измерение влажности почвы с помощью емкостного датчика
+- Отображение процента влажности и сырого значения на e-ink дисплее
+- Веб-интерфейс для просмотра статуса и калибровки
+- Последовательные команды для калибровки
+- Подключение по WiFi с captive portal для настройки
+- Постоянное хранение калибровки в NVS
+- Поддержка глубокого сна (опционально)
 
-## Pin Connections (WeActStudio 2.13" e-ink on ESP32-S3)
+## Подключение пинов (WeActStudio 2.13" e-ink на ESP32-S3)
 
-| Display Pin | ESP32-S3 GPIO |
+| Пин дисплея | GPIO ESP32-S3 |
 |-------------|---------------|
 | CS          | 10            |
 | DC          | 9             |
@@ -20,38 +20,38 @@
 | BUSY        | 7             |
 | MOSI        | 11            |
 | SCK         | 12            |
-| Sensor      | GPIO 4 (ADC)  |
+| Датчик      | GPIO 4 (ADC)  |
 
-## Build Instructions
+## Инструкция по сборке
 
-1. Install PlatformIO (or use Arduino IDE)
-2. Open this project in PlatformIO
-3. Connect ESP32-S3 via USB
-4. Build and upload: `pio run -t upload`
-5. Monitor serial: `pio device monitor`
+1. Установите PlatformIO (или используйте Arduino IDE)
+2. Откройте этот проект в PlatformIO
+3. Подключите ESP32-S3 через USB
+4. Соберите и загрузите: `pio run -t upload`
+5. Монитор порта: `pio device monitor`
 
-## Calibration
+## Калибровка
 
-- Press 'c' via Serial to enter calibration mode
-- Place sensor in dry soil (or air), then press 'd' to set dry value
-- Place sensor in wet soil (or water), then press 'w' to set wet value
-- Press 'r' to reset to defaults
-- Calibration can also be done via web interface
+- Нажмите 'c' через последовательный порт для входа в режим калибровки
+- Поместите датчик в сухую почву (или на воздух), затем нажмите 'd' для установки сухого значения
+- Поместите датчик во влажную почву (или в воду), затем нажмите 'w' для установки влажного значения
+- Нажмите 'r' для сброса к настройкам по умолчанию
+- Калибровка также может быть выполнена через веб-интерфейс
 
-## WiFi Configuration
+## Настройка WiFi
 
-- On first boot, the device creates an AP named "Polivator-Config"
-- Connect to this AP and navigate to captive portal (or http://192.168.4.1)
-- Enter your WiFi credentials and save
-- Device will reboot and connect to your network
+- При первом включении устройство создает точку доступа с именем "Polivator-Config"
+- Подключитесь к этой точке доступа и перейдите на captive portal (или http://192.168.4.1)
+- Введите свои учетные данные WiFi и сохраните
+- Устройство перезагрузится и подключится к вашей сети
 
-## Web Interface
+## Веб-интерфейс
 
-- Status: `http://<device-ip>/api/status`
-- Calibration: POST to `/api/calibrate/dry`, `/api/calibrate/wet`, `/api/calibrate/reset`
-- Full UI planned for future
+- Статус: `http://<ip-устройства>/api/status`
+- Калибровка: POST на `/api/calibrate/dry`, `/api/calibrate/wet`, `/api/calibrate/reset`
+- Полный интерфейс запланирован в будущем
 
-## Dependencies (managed by PlatformIO)
+## Зависимости (управляются PlatformIO)
 
 - GxEPD2
 - ESPAsyncWebServer
