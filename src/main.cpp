@@ -2,6 +2,8 @@
 #include <WiFi.h>
 #include <ArduinoOTA.h>
 #include <esp_task_wdt.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include "Sensor.h"
 #include "Calibration.h"
 #include "Display.h"
@@ -9,10 +11,12 @@
 #include "Settings.h"
 #include "Common/Types.h"
 
-// Пять датчиков на GPIO2, GPIO12-15 (ADC1, свободные от дисплея и Serial)
+// Пять датчиков на GPIO2, GPIO8, GPIO12-15 (ADC1, свободные от дисплея и Serial)
 // Дисплей занимает GPIO4 (BUSY), GPIO5 (CS), GPIO16 (RST), GPIO17 (DC), GPIO18 (SCK), GPIO21 (MOSI).
 // GPIO1 и GPIO3 используются Serial/UART.
-const uint8_t sensorPins[MAX_SENSORS] = {2, 12, 13, 14, 15};
+// GPIO6–GPIO10 — внутренняя SPI flash, использовать нельзя (приведёт к сбою прошивки/чтению мусора).
+// Пин 6,7,8,9,10 зарезервированы и должны быть отклонены валидатором в Calibration::setPin.
+const uint8_t sensorPins[MAX_SENSORS] = {2, 8, 12, 13, 14};
 
 Calibration calibration;
 SensorManager sensorManager;
@@ -36,11 +40,13 @@ void setup() {
   }
   Serial.println();
   
+  settings.begin();
   calibration.begin(sensorPins, MAX_SENSORS);
   esp_task_wdt_reset();
   sensorManager.begin(&calibration, &settings);
   esp_task_wdt_reset();
   display.begin();
+  display.startTask();
   esp_task_wdt_reset();
   webServer.begin();
   esp_task_wdt_reset();
@@ -196,6 +202,7 @@ void loop() {
   }
   
   // Обновление дисплея с заданным интервалом или при принудительном обновлении
+  // Только планируем — реальная отрисовка идёт в задаче на core 0 и не блокирует web/OTA.
   unsigned long displayIntervalMs = (unsigned long)settings.getDisplayInterval() * 1000UL;
   if (now - lastDisplayUpdate >= displayIntervalMs || forceDisplayUpdate) {
     forceDisplayUpdate = false;
@@ -216,6 +223,8 @@ void loop() {
     lastDisplayUpdate = now;
     esp_task_wdt_reset();
   }
-  
-  delay(10);
+
+  // Yield to FreeRTOS so the WiFi/AsyncTCP tasks get CPU time.
+  // Without this the web server may stall under heavy load.
+  vTaskDelay(pdMS_TO_TICKS(1));
 }

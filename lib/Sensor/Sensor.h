@@ -16,6 +16,7 @@ public:
     int getPercent(uint8_t index);
     float getVoltage(uint8_t index);
     uint8_t getCount();
+    uint8_t getEnabledCount();
     void setCalibration(uint8_t index, uint16_t dry, uint16_t wet);
 
 private:

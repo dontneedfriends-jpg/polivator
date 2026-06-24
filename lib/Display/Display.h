@@ -29,11 +29,16 @@ public:
   Display();
   ~Display();
   void begin();
+  // Queue an async redraw — returns immediately, actual update happens on the display task.
   void showStatus(uint8_t sensorCount, const SensorConfig* configs, const int* percentages, const int* rawValues, const char* wifiStatus);
   void showCalibrationScreen(const char* step = "");
   void showMessage(const char* msg);
   void deepSleep();
   void forceFullRefresh();
+  // Start/stop the dedicated display task (run on core 0). Keeps web/OTA responsive during e-ink refresh.
+  void startTask();
+  void stopTask();
+  bool isBusy() const;
 
 private:
   // Tri-color display, but we use only BLACK and WHITE
@@ -44,9 +49,33 @@ private:
   bool m_firstUpdate;
   bool m_initialFullRefreshDone;
   unsigned long m_fullRefreshCounter;
+  bool m_taskRunning;
+  volatile bool m_updatePending;
+  volatile bool m_calibrationPending;
+  volatile bool m_messagePending;
+  char m_calibStep[24];
+  char m_messageText[32];
+  // Snapshot for the queued status update
+  SensorConfig m_snapConfigs[5];
+  int m_snapPercentages[5];
+  int m_snapRaw[5];
+  uint8_t m_snapCount;
+  char m_snapWifi[16];
+  // Set by the task while it owns the SPI bus + GxEPD2
+  volatile bool m_busy;
 
   bool hasChanged(uint8_t sensorCount, const int* percentages, const int* rawValues, const char* wifiStatus);
   void drawStatus(uint8_t sensorCount, const SensorConfig* configs, const int* percentages, const int* rawValues, const char* wifiStatus);
+  // Synchronous render helpers used by the task
+  void renderStatus();
+  void renderCalibration(const char* step);
+  void renderMessage(const char* msg);
+  static void taskThunk(void* arg);
+  void taskLoop();
+
+public:
+  // True once the display task has been started.
+  bool isTaskRunning() const { return m_taskRunning; }
 };
 
 #endif // DISPLAY_H

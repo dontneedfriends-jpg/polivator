@@ -1,9 +1,12 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <Preferences.h>
+
 class Settings {
 public:
   Settings();
+  bool begin();
   // Sensor reading interval, seconds
   int getReadInterval() const;
   void setReadInterval(int interval);
@@ -31,7 +34,9 @@ public:
   // Number of samples per ADC reading
   int getAdcSamples() const;
   void setAdcSamples(int samples);
+  void save();
 private:
+  Preferences prefs;
   int m_readInterval;
   int m_displayInterval;
   int m_webInterval;

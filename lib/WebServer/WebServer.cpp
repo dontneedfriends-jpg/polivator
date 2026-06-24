@@ -22,16 +22,16 @@ WebServer::~WebServer() {
 bool WebServer::begin() {
   Serial.println("Starting WebServer...");
   preferences.begin("wifi", false);
-  
+
   String ssid = preferences.getString("ssid", "");
   String pass = preferences.getString("pass", "");
-  
+
   if (ssid.length() > 0 && connectToSavedWiFi()) {
     Serial.println("Connected to saved WiFi.");
   } else {
     setupAP();
   }
-  
+
   setupRoutes();
   server.begin();
   Serial.println("WebServer::begin OK");
@@ -121,7 +121,8 @@ int WebServer::getIndexFromParam(AsyncWebServerRequest *request) {
 void WebServer::setupRoutes() {
   // Root: serve the web UI page
   server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/html", index_html_content);
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_content);
+    request->send(response);
   });
   
   // GET /api/status
@@ -457,7 +458,7 @@ button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cu
     request->send(404, "text/plain", "Not found");
   });
   
-  // SSE events endpoint (optional)
+  // SSE events endpoint (auth-protected via Authorization header parsed from request)
   events.onConnect([](AsyncEventSourceClient *client) {
     if (client->lastId()) {
       Serial.printf("Client reconnected! Last message ID: %u\n", client->lastId());
@@ -468,27 +469,50 @@ button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cu
 }
 
 void WebServer::handleUpdate(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-  if (!index) {
+  // Re-check auth on body (in case the headers were skipped on the upload)
+  if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+    request->requestAuthentication();
+    return;
+  }
+
+  // Abort any in-progress update if it takes too long (10 min)
+  if (index == 0) {
+    uploadStartTime = millis();
+    if (updateInProgress) {
+      Update.abort();
+    }
+    updateInProgress = true;
     Serial.printf("Update Start: %s\n", filename.c_str());
     if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
       Update.printError(Serial);
+      updateInProgress = false;
       request->send(400, "text/plain", "OTA update begin failed");
       return;
     }
   }
+  if (updateInProgress && millis() - uploadStartTime > 600000UL) {
+    Update.abort();
+    updateInProgress = false;
+    request->send(400, "text/plain", "OTA update timed out");
+    return;
+  }
   if (Update.write(data, len) != len) {
     Update.printError(Serial);
+    Update.abort();
+    updateInProgress = false;
     request->send(400, "text/plain", "OTA update write failed");
     return;
   }
   if (final) {
     if (Update.end(true)) {
       Serial.printf("Update Success: %u bytes\n", index + len);
+      updateInProgress = false;
       request->send(200, "text/plain", "Update successful. Rebooting...");
       delay(1000);
       ESP.restart();
     } else {
       Update.printError(Serial);
+      updateInProgress = false;
       request->send(400, "text/plain", "OTA update end failed");
     }
   }

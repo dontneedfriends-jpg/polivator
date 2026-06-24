@@ -4,6 +4,7 @@
 #include <Fonts/FreeMonoBold18pt7b.h>
 #include <string.h>
 #include <cstdlib>
+#include <esp_task_wdt.h>
 
 // Droplet icon 16x16 monochrome bitmap
 const uint8_t droplet_16x16[] PROGMEM = {
@@ -28,10 +29,19 @@ const uint8_t droplet_16x16[] PROGMEM = {
 Display::Display()
   : m_firstUpdate(true),
     m_initialFullRefreshDone(false),
-    m_fullRefreshCounter(0) {
+    m_fullRefreshCounter(0),
+    m_taskRunning(false),
+    m_updatePending(false),
+    m_calibrationPending(false),
+    m_messagePending(false),
+    m_snapCount(0),
+    m_busy(false) {
   memset(m_prevPercentages, -1, sizeof(m_prevPercentages));
   memset(m_prevRaw, -1, sizeof(m_prevRaw));
   m_prevWifi[0] = '\0';
+  m_calibStep[0] = '\0';
+  m_messageText[0] = '\0';
+  m_snapWifi[0] = '\0';
 }
 
 Display::~Display() {
@@ -43,16 +53,9 @@ void Display::begin() {
   SPI.begin(EINK_SCLK, -1, EINK_MOSI, EINK_CS);
   m_display.init(115200, true);
   m_display.setRotation(1);
-  // Initial full refresh to clear ghosting and verify display is alive
-  m_display.setFullWindow();
-  m_display.firstPage();
-  do {
-    m_display.fillScreen(GxEPD_WHITE);
-  } while (m_display.nextPage());
   m_firstUpdate = true;
-  m_initialFullRefreshDone = true;
-  // Keep power on briefly; then power off only if no updates scheduled soon
-  // For stability, do NOT powerOff here; let first showStatus handle it.
+  m_initialFullRefreshDone = false;
+  // Initial clear will be performed by the display task on the first update — keep setup() fast.
 }
 
 bool Display::hasChanged(uint8_t sensorCount, const int* percentages, const int* rawValues, const char* wifiStatus) {
@@ -68,41 +71,81 @@ bool Display::hasChanged(uint8_t sensorCount, const int* percentages, const int*
 }
 
 void Display::drawStatus(uint8_t sensorCount, const SensorConfig* configs, const int* percentages, const int* rawValues, const char* wifiStatus) {
+  int w = m_display.width();
+  int h = m_display.height();
+
   // Top bar: WiFi status (small font)
   m_display.setTextColor(GxEPD_BLACK);
   m_display.setFont(&FreeMonoBold9pt7b);
-  m_display.setCursor(5, 14);
-  m_display.print("WiFi: ");
+  m_display.setCursor(4, 12);
+  m_display.print("WiFi:");
   m_display.print(wifiStatus);
 
-  // Center: droplet icon and large percentage (first sensor)
-  if (sensorCount > 0) {
-    // Draw droplet icon
-    int16_t iconX = 25;
-    int16_t iconY = 48;
-    m_display.drawBitmap(iconX, iconY, droplet_16x16, 16, 16, GxEPD_BLACK);
+  // Divider under top bar
+  m_display.drawLine(0, 16, w, 16, GxEPD_BLACK);
 
-    // Percentage text
-    char pctStr[8];
-    if (configs[0].dryRaw != configs[0].wetRaw) {
-      snprintf(pctStr, sizeof(pctStr), "%d%%", percentages[0]);
-    } else {
-      snprintf(pctStr, sizeof(pctStr), "?");
+  if (sensorCount == 0) {
+    m_display.setCursor(4, h - 4);
+    m_display.print("No sensors");
+    return;
+  }
+
+  // Vertical column layout: only enabled sensors
+  uint8_t visible[5];
+  uint8_t vCount = 0;
+  for (uint8_t i = 0; i < 5 && i < sensorCount; i++) {
+    if (configs[i].enabled) visible[vCount++] = i;
+  }
+  if (vCount == 0) {
+    m_display.setCursor(4, h / 2);
+    m_display.print("No sensors");
+    return;
+  }
+
+  int topY = 20;
+  int bottomY = h - 12;
+  int colH = bottomY - topY;
+  int colW = 14;
+  int gap = (w - vCount * colW) / (vCount + 1);
+  if (gap < 4) gap = 4;
+
+  m_display.setFont(&FreeMonoBold9pt7b);
+
+  for (uint8_t k = 0; k < vCount; k++) {
+    uint8_t i = visible[k];
+    int colX = gap + k * (colW + gap);
+    int colY = topY;
+
+    m_display.drawRect(colX, colY, colW, colH, GxEPD_BLACK);
+
+    int pct = percentages[i];
+    if (pct < 0) pct = 0;
+    if (pct > 100) pct = 100;
+    int fillH = (colH - 2) * pct / 100;
+    if (fillH > 0) {
+      m_display.fillRect(colX + 1, colY + colH - 1 - fillH, colW - 2, fillH, GxEPD_BLACK);
     }
-    m_display.setFont(&FreeMonoBold18pt7b);
-    int16_t tbx, tby; uint16_t tbw, tbh;
-    m_display.getTextBounds(pctStr, 0, 0, &tbx, &tby, &tbw, &tbh);
-    int16_t textX = iconX + 16 + 10;
-    int16_t textY = iconY + 14;
-    m_display.setCursor(textX, textY);
-    m_display.print(pctStr);
 
-    // Bottom bar: sensor name and raw value
-    m_display.setFont(&FreeMonoBold9pt7b);
-    char bottomStr[32];
-    snprintf(bottomStr, sizeof(bottomStr), "%s  %d", configs[0].name, rawValues[0]);
-    m_display.setCursor(5, m_display.height() - 6);
-    m_display.print(bottomStr);
+    char label[4];
+    snprintf(label, sizeof(label), "%d", i + 1);
+    int16_t tbx, tby; uint16_t tbw, tbh;
+    m_display.getTextBounds(label, 0, 0, &tbx, &tby, &tbw, &tbh);
+    m_display.setCursor(colX + (colW - tbw) / 2, h - 2);
+    m_display.print(label);
+
+    char pctStr[8];
+    if (configs[i].dryRaw != configs[i].wetRaw) {
+      snprintf(pctStr, sizeof(pctStr), "%d%%", pct);
+    } else {
+      snprintf(pctStr, sizeof(pctStr), "-");
+    }
+    m_display.getTextBounds(pctStr, 0, 0, &tbx, &tby, &tbw, &tbh);
+    int textX = colX + colW + 2;
+    int textY = colY + (colH + tbh) / 2;
+    if (textX + tbw <= w) {
+      m_display.setCursor(textX, textY);
+      m_display.print(pctStr);
+    }
   }
 }
 
@@ -111,8 +154,31 @@ void Display::showStatus(uint8_t sensorCount, const SensorConfig* configs, const
     return;
   }
 
-  // Do a full refresh on first update, then mostly partial updates for speed.
-  // Every 10th update force full refresh to clear ghosting.
+  if (!m_taskRunning) {
+    renderStatusImpl:
+    renderStatus();
+    return;
+  }
+
+  // Snapshot for the display task (avoid touching caller's buffers across cores)
+  uint8_t cap = sensorCount > 5 ? 5 : sensorCount;
+  m_snapCount = cap;
+  for (uint8_t i = 0; i < cap; i++) {
+    m_snapConfigs[i] = configs[i];
+    m_snapPercentages[i] = percentages[i];
+    m_snapRaw[i] = rawValues[i];
+  }
+  strncpy(m_snapWifi, wifiStatus, sizeof(m_snapWifi) - 1);
+  m_snapWifi[sizeof(m_snapWifi) - 1] = '\0';
+  m_updatePending = true;
+}
+
+void Display::renderStatus() {
+  uint8_t sensorCount = m_snapCount;
+  if (sensorCount > 5) sensorCount = 5;
+
+  // Always use partial window — fast and flicker-free.
+  // Every Nth update force full refresh to clear ghosting.
   bool fullRefresh = m_firstUpdate || (m_fullRefreshCounter % 10 == 0);
 
   if (fullRefresh) {
@@ -123,22 +189,18 @@ void Display::showStatus(uint8_t sensorCount, const SensorConfig* configs, const
   m_display.firstPage();
   do {
     m_display.fillScreen(GxEPD_WHITE);
-    drawStatus(sensorCount, configs, percentages, rawValues, wifiStatus);
+    drawStatus(sensorCount, m_snapConfigs, m_snapPercentages, m_snapRaw, m_snapWifi);
   } while (m_display.nextPage());
 
-  // Keep display powered during partial updates for faster subsequent refreshes.
-  // Only power off after full refresh to reduce power consumption.
   if (fullRefresh) {
     m_display.powerOff();
   }
 
-  // Update previous values
-  if (sensorCount > 5) sensorCount = 5;
-  for (uint8_t i = 0; i < sensorCount && i < 5; i++) {
-    m_prevPercentages[i] = percentages[i];
-    m_prevRaw[i] = rawValues[i];
+  for (uint8_t i = 0; i < sensorCount; i++) {
+    m_prevPercentages[i] = m_snapPercentages[i];
+    m_prevRaw[i] = m_snapRaw[i];
   }
-  strncpy(m_prevWifi, wifiStatus, sizeof(m_prevWifi) - 1);
+  strncpy(m_prevWifi, m_snapWifi, sizeof(m_prevWifi) - 1);
   m_prevWifi[sizeof(m_prevWifi) - 1] = '\0';
 
   m_firstUpdate = false;
@@ -146,6 +208,13 @@ void Display::showStatus(uint8_t sensorCount, const SensorConfig* configs, const
 }
 
 void Display::showCalibrationScreen(const char* step) {
+  if (!m_taskRunning) { renderCalibration(step); return; }
+  strncpy(m_calibStep, step ? step : "", sizeof(m_calibStep) - 1);
+  m_calibStep[sizeof(m_calibStep) - 1] = '\0';
+  m_calibrationPending = true;
+}
+
+void Display::renderCalibration(const char* step) {
   m_display.setFullWindow();
   m_display.firstPage();
   do {
@@ -169,6 +238,13 @@ void Display::showCalibrationScreen(const char* step) {
 }
 
 void Display::showMessage(const char* msg) {
+  if (!m_taskRunning) { renderMessage(msg); return; }
+  strncpy(m_messageText, msg ? msg : "", sizeof(m_messageText) - 1);
+  m_messageText[sizeof(m_messageText) - 1] = '\0';
+  m_messagePending = true;
+}
+
+void Display::renderMessage(const char* msg) {
   m_display.setFullWindow();
   m_display.firstPage();
   do {
@@ -191,4 +267,52 @@ void Display::deepSleep() {
 
 void Display::forceFullRefresh() {
   m_firstUpdate = true;
+}
+
+bool Display::isBusy() const {
+  return m_busy;
+}
+
+void Display::startTask() {
+  if (m_taskRunning) return;
+  m_taskRunning = true;
+  // Pin the display refresh to core 0 so loop() on core 1 stays responsive.
+  // 8 KB stack is needed for GxEPD2 page buffers + FreeMono fonts.
+  xTaskCreatePinnedToCore(&Display::taskThunk, "display", 8192, this, 1, nullptr, 0);
+}
+
+void Display::stopTask() {
+  m_taskRunning = false;
+}
+
+void Display::taskThunk(void* arg) {
+  static_cast<Display*>(arg)->taskLoop();
+}
+
+void Display::taskLoop() {
+  while (m_taskRunning) {
+    if (m_messagePending) {
+      m_messagePending = false;
+      m_busy = true;
+      renderMessage(m_messageText);
+      m_busy = false;
+      continue;
+    }
+    if (m_calibrationPending) {
+      m_calibrationPending = false;
+      m_busy = true;
+      renderCalibration(m_calibStep);
+      m_busy = false;
+      continue;
+    }
+    if (m_updatePending) {
+      m_updatePending = false;
+      m_busy = true;
+      renderStatus();
+      m_busy = false;
+      continue;
+    }
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
+  vTaskDelete(nullptr);
 }

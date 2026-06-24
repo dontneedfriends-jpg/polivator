@@ -25,7 +25,8 @@ bool SensorManager::begin(Calibration* calibration, Settings* settings) {
         sensors[i].raw = 0;
         sensors[i].percent = 0;
         sensors[i].voltage = 0.0f;
-        pinMode(sensors[i].pin, INPUT);
+        // Do NOT call pinMode on ADC pins — it can detach the ADC channel.
+        // analogRead will configure the pin correctly internally.
     }
     Serial.println("SensorManager::begin OK");
     return true;
@@ -41,7 +42,6 @@ void SensorManager::readAll() {
             continue;
         }
         long sum = 0;
-        pinMode(sensors[i].pin, INPUT);
         for (int j = 0; j < m_samples; j++) {
             sum += analogRead(sensors[i].pin);
         }
@@ -77,6 +77,16 @@ float SensorManager::getVoltage(uint8_t index) {
 
 uint8_t SensorManager::getCount() {
     return MAX_SENSORS;
+}
+
+uint8_t SensorManager::getEnabledCount() {
+    if (!cal) return 0;
+    const SensorConfig* configs = cal->getConfigs();
+    uint8_t n = 0;
+    for (uint8_t i = 0; i < MAX_SENSORS; i++) {
+        if (configs[i].enabled) n++;
+    }
+    return n;
 }
 
 void SensorManager::setCalibration(uint8_t index, uint16_t dry, uint16_t wet) {
