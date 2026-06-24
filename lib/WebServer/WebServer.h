@@ -5,32 +5,39 @@
 #include <DNSServer.h>
 #include <WiFi.h>
 #include <Preferences.h>
+#include "../Sensor/Sensor.h"
+#include "../Common/Types.h"
+#include "../Settings/Settings.h"
 
-class Sensor;
 class Calibration;
 class Display;
 
 class WebServer {
 public:
-  WebServer(Sensor* sensor, Calibration* calibration, Display* display);
+  WebServer(SensorManager* sensorManager, Calibration* calibration, Display* display, Settings* settings);
   ~WebServer();
-  void begin();
+  bool begin();
   void handleClient();
   void stop();
-  void sendStatusEvent(float moisture, int raw, float voltage, uint16_t dry, uint16_t wet);
+  void sendStatusEvent(SensorManager* sensorManager);
+  void handleUpdate(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);
 
 private:
   void setupAP();
   bool connectToSavedWiFi();
   void setupRoutes();
+  static int getIndexFromParam(AsyncWebServerRequest *request);
 
   AsyncWebServer server;
   AsyncEventSource events{"/events"};
   DNSServer dnsServer;
-  Sensor* m_sensor;
+  SensorManager* m_sensorManager;
   Calibration* m_calibration;
   Display* m_display;
+  Settings* m_settings;
   Preferences preferences;
+  bool updateInProgress = false;
+  uint32_t uploadStartTime = 0;
 };
 
 #endif // WEBSERVER_H

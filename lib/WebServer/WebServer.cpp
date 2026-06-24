@@ -1,19 +1,25 @@
 #include "WebServer.h"
+#include "../Settings/Settings.h"
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include "Sensor.h"
 #include "Calibration.h"
 #include "Display.h"
 #include "index.h"
+#include <Update.h>
+#include <esp_task_wdt.h>
 
-WebServer::WebServer(Sensor* sensor, Calibration* calibration, Display* display)
-  : m_sensor(sensor), m_calibration(calibration), m_display(display), server(80) {
+const char* DEFAULT_AUTH_USERNAME = "admin";
+const char* DEFAULT_AUTH_PASSWORD = "admin";
+
+WebServer::WebServer(SensorManager* sensorManager, Calibration* calibration, Display* display, Settings* settings)
+  : m_sensorManager(sensorManager), m_calibration(calibration), m_display(display), m_settings(settings), server(80) {
 }
 
 WebServer::~WebServer() {
 }
 
-void WebServer::begin() {
+bool WebServer::begin() {
   Serial.println("Starting WebServer...");
   preferences.begin("wifi", false);
   
@@ -28,7 +34,9 @@ void WebServer::begin() {
   
   setupRoutes();
   server.begin();
+  Serial.println("WebServer::begin OK");
   Serial.println("WebServer started.");
+  return true;
 }
 
 void WebServer::handleClient() {
@@ -47,14 +55,26 @@ void WebServer::stop() {
   }
 }
 
-void WebServer::sendStatusEvent(float moisture, int raw, float voltage, uint16_t dry, uint16_t wet) {
-  DynamicJsonDocument doc(256);
-  doc["moisture"] = moisture;
-  doc["raw"] = raw;
-  doc["voltage"] = voltage;
-  doc["dry"] = dry;
-  doc["wet"] = wet;
+void WebServer::sendStatusEvent(SensorManager* sensorManager) {
+  JsonDocument doc;
+  JsonArray sensors = doc["sensors"].to<JsonArray>();
+  for (int i = 0; i < MAX_SENSORS; i++) {
+    JsonObject sensor = sensors.add<JsonObject>();
+    sensor["name"] = m_calibration->getName(i);
+    sensor["pin"] = m_calibration->getPin(i);
+    sensor["raw"] = sensorManager->getRaw(i);
+    sensor["percentage"] = sensorManager->getPercent(i);
+    sensor["voltage"] = sensorManager->getVoltage(i);
+    sensor["dry"] = m_calibration->getDryValue(i);
+    sensor["wet"] = m_calibration->getWetValue(i);
+    sensor["enabled"] = m_calibration->getConfigs()[i].enabled;
+  }
   doc["wifi"] = WiFi.status() == WL_CONNECTED ? "connected" : (WiFi.getMode() == WIFI_AP ? "ap" : "disconnected");
+  if (WiFi.status() == WL_CONNECTED) {
+    doc["ssid"] = WiFi.SSID();
+  } else {
+    doc["ssid"] = preferences.getString("ssid", "");
+  }
   String output;
   serializeJson(doc, output);
   events.send(output.c_str(), "status", millis());
@@ -71,6 +91,7 @@ bool WebServer::connectToSavedWiFi() {
   unsigned long startAttempt = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 10000) {
     delay(100);
+    esp_task_wdt_reset();
   }
   
   return WiFi.status() == WL_CONNECTED;
@@ -78,62 +99,192 @@ bool WebServer::connectToSavedWiFi() {
 
 void WebServer::setupAP() {
   WiFi.mode(WIFI_AP);
-  WiFi.softAP("Polivator-Config");
   IPAddress apIP(192, 168, 4, 1);
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+  WiFi.softAP("Polivator-Config");
   
   dnsServer.start(53, "*", apIP);
+}
+
+int WebServer::getIndexFromParam(AsyncWebServerRequest *request) {
+  if (!request->hasParam("index")) {
+    return -1;
+  }
+  String indexStr = request->getParam("index")->value();
+  int index = indexStr.toInt();
+  if (index < 0 || index >= MAX_SENSORS) {
+    return -1;
+  }
+  return index;
 }
 
 void WebServer::setupRoutes() {
   // Root: serve the web UI page
   server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
-    request->send(200, "text/html", index_html_content);
+    request->send_P(200, "text/html", index_html_content);
   });
   
   // GET /api/status
   server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
     AsyncResponseStream *response = request->beginResponseStream("application/json");
-    DynamicJsonDocument doc(256);
-    doc["moisture"] = m_sensor->readPercent();
-    doc["raw"] = m_sensor->readRaw();
-    doc["voltage"] = m_sensor->readVoltage();
-    doc["dry"] = m_calibration->getDryValue();
-    doc["wet"] = m_calibration->getWetValue();
+    JsonDocument doc;
+    JsonArray sensors = doc["sensors"].to<JsonArray>();
+    for (int i = 0; i < MAX_SENSORS; i++) {
+      JsonObject sensor = sensors.add<JsonObject>();
+      sensor["name"] = m_calibration->getName(i);
+      sensor["pin"] = m_calibration->getPin(i);
+      sensor["raw"] = m_sensorManager->getRaw(i);
+      sensor["percentage"] = m_sensorManager->getPercent(i);
+      sensor["voltage"] = m_sensorManager->getVoltage(i);
+      sensor["dry"] = m_calibration->getDryValue(i);
+      sensor["wet"] = m_calibration->getWetValue(i);
+      sensor["enabled"] = m_calibration->getConfigs()[i].enabled;
+    }
     doc["wifi"] = WiFi.status() == WL_CONNECTED ? "connected" : (WiFi.getMode() == WIFI_AP ? "ap" : "disconnected");
     serializeJson(doc, *response);
     request->send(response);
   });
-  
-  // POST /api/calibrate/dry
+
+  // POST /api/calibrate/dry?index=0
   server.on("/api/calibrate/dry", HTTP_POST, [this](AsyncWebServerRequest *request) {
-    int raw = m_sensor->readRaw();
-    m_calibration->setDryValue(raw);
-    m_sensor->setCalibration(m_calibration->getDryValue(), m_calibration->getWetValue());
-    request->send(200, "text/plain", "Dry threshold set");
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    int index = getIndexFromParam(request);
+    if (index < 0) {
+      request->send(400, "text/plain", "Missing or invalid 'index' query parameter");
+      return;
+    }
+    int raw = m_sensorManager->getRaw(index);
+    m_calibration->setDryValue(index, raw);
+    m_sensorManager->setCalibration(index, m_calibration->getDryValue(index), m_calibration->getWetValue(index));
+    request->send(200, "text/plain", "Dry threshold set for sensor " + String(index));
   });
   
-  // POST /api/calibrate/wet
+  // POST /api/calibrate/wet?index=0
   server.on("/api/calibrate/wet", HTTP_POST, [this](AsyncWebServerRequest *request) {
-    int raw = m_sensor->readRaw();
-    m_calibration->setWetValue(raw);
-    m_sensor->setCalibration(m_calibration->getDryValue(), m_calibration->getWetValue());
-    request->send(200, "text/plain", "Wet threshold set");
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    int index = getIndexFromParam(request);
+    if (index < 0) {
+      request->send(400, "text/plain", "Missing or invalid 'index' query parameter");
+      return;
+    }
+    int raw = m_sensorManager->getRaw(index);
+    m_calibration->setWetValue(index, raw);
+    m_sensorManager->setCalibration(index, m_calibration->getDryValue(index), m_calibration->getWetValue(index));
+    request->send(200, "text/plain", "Wet threshold set for sensor " + String(index));
   });
   
-  // POST /api/calibrate/reset
+  // POST /api/calibrate/reset?index=0
   server.on("/api/calibrate/reset", HTTP_POST, [this](AsyncWebServerRequest *request) {
-    m_calibration->resetToDefaults();
-    m_sensor->setCalibration(m_calibration->getDryValue(), m_calibration->getWetValue());
-    request->send(200, "text/plain", "Calibration reset");
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    int index = getIndexFromParam(request);
+    if (index < 0) {
+      request->send(400, "text/plain", "Missing or invalid 'index' query parameter");
+      return;
+    }
+    m_calibration->resetToDefaults(index);
+    m_sensorManager->setCalibration(index, m_calibration->getDryValue(index), m_calibration->getWetValue(index));
+    request->send(200, "text/plain", "Calibration reset for sensor " + String(index));
+  });
+  
+  // POST /api/config/sensor?index=0  (body: {"name": "Sensor1"})
+  server.on("/api/config/sensor", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    int index = getIndexFromParam(request);
+    if (index < 0) {
+      request->send(400, "text/plain", "Missing or invalid 'index' query parameter");
+      return;
+    }
+    // Parse JSON body
+    if (!request->contentType().startsWith("application/json")) {
+      request->send(400, "text/plain", "Content-Type must be application/json");
+      return;
+    }
+    String body = request->arg("plain");
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, body);
+    if (error) {
+      request->send(400, "text/plain", "Invalid JSON");
+      return;
+    }
+    const char* name = doc["name"];
+    if (name) {
+      m_calibration->setName(index, name);
+      request->send(200, "text/plain", "Name set for sensor " + String(index));
+      return;
+    }
+    if (doc["pin"].is<int>()) {
+      uint8_t pin = doc["pin"];
+      m_calibration->setPin(index, pin);
+      m_sensorManager->setCalibration(index, m_calibration->getDryValue(index), m_calibration->getWetValue(index));
+      request->send(200, "text/plain", "Pin set for sensor " + String(index));
+      return;
+    }
+    request->send(400, "text/plain", "Missing 'name' or 'pin' field");
+  });
+  
+  // DELETE /api/sensor?index=N
+  server.on("/api/sensor", HTTP_DELETE, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    int index = getIndexFromParam(request);
+    if (index < 0) {
+      request->send(400, "text/plain", "Missing or invalid 'index' query parameter");
+      return;
+    }
+    m_calibration->removeSensor(index);
+    m_display->forceFullRefresh();
+    request->send(200, "text/plain", "Sensor " + String(index) + " removed");
+  });
+  
+  // POST /api/sensor/enable?index=N
+  server.on("/api/sensor/enable", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    int index = getIndexFromParam(request);
+    if (index < 0) {
+      request->send(400, "text/plain", "Missing or invalid 'index' query parameter");
+      return;
+    }
+    m_calibration->enableSensor(index);
+    m_display->forceFullRefresh();
+    request->send(200, "text/plain", "Sensor " + String(index) + " enabled");
   });
   
   // GET /api/calibration
   server.on("/api/calibration", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
     AsyncResponseStream *response = request->beginResponseStream("application/json");
-    DynamicJsonDocument doc(128);
-    doc["dry"] = m_calibration->getDryValue();
-    doc["wet"] = m_calibration->getWetValue();
+    JsonDocument doc;
+    JsonArray sensors = doc["sensors"].to<JsonArray>();
+    for (int i = 0; i < MAX_SENSORS; i++) {
+      JsonObject sensor = sensors.add<JsonObject>();
+      sensor["name"] = m_calibration->getName(i);
+      sensor["dry"] = m_calibration->getDryValue(i);
+      sensor["wet"] = m_calibration->getWetValue(i);
+    }
     serializeJson(doc, *response);
     request->send(response);
   });
@@ -169,6 +320,10 @@ button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cu
   
   // POST /wifi/connect
   server.on("/wifi/connect", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
     if (request->hasParam("ssid", true)) {
       String ssid = request->getParam("ssid", true)->value();
       String pass = request->hasParam("password", true) ? request->getParam("password", true)->value() : "";
@@ -180,6 +335,121 @@ button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cu
     } else {
       request->send(400, "text/plain", "Missing ssid");
     }
+  });
+  
+  // GET /api/wifi
+  server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (preferences.getString("ssid", "").length() > 0) {
+      if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+        request->requestAuthentication();
+        return;
+      }
+    }
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    JsonDocument doc;
+    doc["ssid"] = preferences.getString("ssid", "");
+    serializeJson(doc, *response);
+    request->send(response);
+  });
+  
+  // POST /api/config/wifi - accepts form-urlencoded only
+  server.on("/api/config/wifi", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (preferences.getString("ssid", "").length() > 0) {
+      if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+        request->requestAuthentication();
+        return;
+      }
+    }
+    if (!request->hasParam("ssid", true)) {
+      request->send(400, "text/plain", "Missing 'ssid' field");
+      return;
+    }
+    String ssid = request->getParam("ssid", true)->value();
+    String pass = request->hasParam("pass", true) ? request->getParam("pass", true)->value() : "";
+    preferences.putString("ssid", ssid);
+    preferences.putString("pass", pass);
+    request->send(200, "text/plain", "Credentials saved. Rebooting...");
+    delay(1000);
+    ESP.restart();
+  });
+  
+  // GET /api/settings
+  server.on("/api/settings", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    JsonDocument doc;
+    doc["readInterval"] = m_settings->getReadInterval();
+    doc["displayInterval"] = m_settings->getDisplayInterval();
+    doc["webInterval"] = m_settings->getWebInterval();
+    doc["updatePriority"] = m_settings->getUpdatePriority();
+    doc["sleepMode"] = m_settings->getSleepMode();
+    doc["otaEnabled"] = m_settings->getOtaEnabled();
+    doc["debugEnabled"] = m_settings->getDebugEnabled();
+    doc["displayUnit"] = m_settings->getDisplayUnit();
+    doc["adcSamples"] = m_settings->getAdcSamples();
+    serializeJson(doc, *response);
+    request->send(response);
+  });
+  
+  // POST /api/settings
+  server.on("/api/settings", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    if (!request->contentType().startsWith("application/json")) {
+      request->send(400, "text/plain", "Content-Type must be application/json");
+      return;
+    }
+    String body = request->arg("plain");
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, body);
+    if (error) {
+      request->send(400, "text/plain", "Invalid JSON");
+      return;
+    }
+    if (doc["readInterval"].is<int>()) {
+      m_settings->setReadInterval(doc["readInterval"]);
+    }
+    if (doc["displayInterval"].is<int>()) {
+      m_settings->setDisplayInterval(doc["displayInterval"]);
+    }
+    if (doc["webInterval"].is<int>()) {
+      m_settings->setWebInterval(doc["webInterval"]);
+    }
+    if (doc["updatePriority"].is<int>()) {
+      m_settings->setUpdatePriority(doc["updatePriority"]);
+    }
+    if (doc["sleepMode"].is<int>()) {
+      m_settings->setSleepMode(doc["sleepMode"]);
+    }
+    if (doc["otaEnabled"].is<bool>()) {
+      m_settings->setOtaEnabled(doc["otaEnabled"]);
+    }
+    if (doc["debugEnabled"].is<bool>()) {
+      m_settings->setDebugEnabled(doc["debugEnabled"]);
+    }
+    if (doc["displayUnit"].is<int>()) {
+      m_settings->setDisplayUnit(doc["displayUnit"]);
+    }
+    if (doc["adcSamples"].is<int>()) {
+      m_settings->setAdcSamples(doc["adcSamples"]);
+    }
+    request->send(200, "text/plain", "Settings saved");
+  });
+  
+  // OTA firmware update endpoint
+  server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    // Will be handled by onUpload
+  }, [this](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    this->handleUpdate(request, filename, index, data, len, final);
   });
   
   // Handle 404
@@ -195,4 +465,31 @@ button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cu
     client->send("hello", NULL, millis(), 1000);
   });
   server.addHandler(&events);
+}
+
+void WebServer::handleUpdate(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+  if (!index) {
+    Serial.printf("Update Start: %s\n", filename.c_str());
+    if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
+      Update.printError(Serial);
+      request->send(400, "text/plain", "OTA update begin failed");
+      return;
+    }
+  }
+  if (Update.write(data, len) != len) {
+    Update.printError(Serial);
+    request->send(400, "text/plain", "OTA update write failed");
+    return;
+  }
+  if (final) {
+    if (Update.end(true)) {
+      Serial.printf("Update Success: %u bytes\n", index + len);
+      request->send(200, "text/plain", "Update successful. Rebooting...");
+      delay(1000);
+      ESP.restart();
+    } else {
+      Update.printError(Serial);
+      request->send(400, "text/plain", "OTA update end failed");
+    }
+  }
 }

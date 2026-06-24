@@ -1,37 +1,91 @@
 #include "Sensor.h"
 #include <Arduino.h>
+#include "Calibration.h"
+#include "Settings.h"
 
-Sensor::Sensor(int pin) : m_pin(pin), m_dryValue(3000), m_wetValue(1200) {
+SensorManager::SensorManager() : cal(nullptr) {
 }
 
-void Sensor::begin() {
-  analogReadResolution(12);
-  analogSetAttenuation(ADC_11db);
+bool SensorManager::begin(Calibration* calibration, Settings* settings) {
+    if (!calibration) {
+        Serial.println("SensorManager::begin FAILED - null calibration");
+        return false;
+    }
+    cal = calibration;
+    analogReadResolution(12);
+    analogSetAttenuation(ADC_11db);
+    int samples = settings ? settings->getAdcSamples() : 10;
+    if (samples < 1) samples = 1;
+    if (samples > 100) samples = 100;
+    m_samples = samples;
+    for (uint8_t i = 0; i < MAX_SENSORS; i++) {
+        sensors[i].pin = cal->getPin(i);
+        sensors[i].dry = cal->getDryValue(i);
+        sensors[i].wet = cal->getWetValue(i);
+        sensors[i].raw = 0;
+        sensors[i].percent = 0;
+        sensors[i].voltage = 0.0f;
+        pinMode(sensors[i].pin, INPUT);
+    }
+    Serial.println("SensorManager::begin OK");
+    return true;
 }
 
-int Sensor::readRaw() {
-  long sum = 0;
-  for (int i = 0; i < SAMPLES; i++) {
-    sum += analogRead(m_pin);
-  }
-  return sum / SAMPLES;
+void SensorManager::readAll() {
+    const SensorConfig* configs = cal->getConfigs();
+    for (uint8_t i = 0; i < MAX_SENSORS; i++) {
+        if (!configs[i].enabled) {
+            sensors[i].raw = 0;
+            sensors[i].percent = 0;
+            sensors[i].voltage = 0.0f;
+            continue;
+        }
+        long sum = 0;
+        pinMode(sensors[i].pin, INPUT);
+        for (int j = 0; j < m_samples; j++) {
+            sum += analogRead(sensors[i].pin);
+        }
+        sensors[i].raw = sum / m_samples;
+        int raw = sensors[i].raw;
+        if (raw <= sensors[i].wet) {
+            sensors[i].percent = 100;
+        } else if (raw >= sensors[i].dry) {
+            sensors[i].percent = 0;
+        } else {
+            int range = sensors[i].dry - sensors[i].wet;
+            if (range == 0) sensors[i].percent = 0;
+            else sensors[i].percent = (sensors[i].dry - raw) * 100 / range;
+        }
+        sensors[i].voltage = raw * (3.3f / 4095.0f);
+    }
 }
 
-int Sensor::readPercent() {
-  int raw = readRaw();
-  if (raw <= m_wetValue) return 100;
-  if (raw >= m_dryValue) return 0;
-  int range = m_dryValue - m_wetValue;
-  if (range == 0) return 0;
-  return (m_dryValue - raw) * 100 / range;
+int SensorManager::getRaw(uint8_t index) {
+    if (index >= MAX_SENSORS) return 0;
+    return sensors[index].raw;
 }
 
-float Sensor::readVoltage() {
-  int raw = readRaw();
-  return raw * (3.3f / 4095.0f);
+int SensorManager::getPercent(uint8_t index) {
+    if (index >= MAX_SENSORS) return 0;
+    return sensors[index].percent;
 }
 
-void Sensor::setCalibration(int dry, int wet) {
-  m_dryValue = dry;
-  m_wetValue = wet;
+float SensorManager::getVoltage(uint8_t index) {
+    if (index >= MAX_SENSORS) return 0.0f;
+    return sensors[index].voltage;
+}
+
+uint8_t SensorManager::getCount() {
+    return MAX_SENSORS;
+}
+
+void SensorManager::setCalibration(uint8_t index, uint16_t dry, uint16_t wet) {
+    if (index >= MAX_SENSORS) return;
+    sensors[index].pin = cal->getPin(index);
+    sensors[index].dry = dry;
+    sensors[index].wet = wet;
+    if (cal) {
+        cal->setDryRaw(index, dry);
+        cal->setWetRaw(index, wet);
+    }
 }
