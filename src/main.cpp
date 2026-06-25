@@ -9,6 +9,7 @@
 #include "Display.h"
 #include "WebServer.h"
 #include "Settings.h"
+#include "WaterPump.h"
 #include "Common/Types.h"
 
 // Пять датчиков на GPIO2, GPIO8, GPIO12-15 (ADC1, свободные от дисплея и Serial)
@@ -18,11 +19,15 @@
 // Пин 6,7,8,9,10 зарезервированы и должны быть отклонены валидатором в Calibration::setPin.
 const uint8_t sensorPins[MAX_SENSORS] = {2, 8, 12, 13, 14};
 
+// Реле мотора (SONGLE SRD-05VDC-SL-C) на GPIO38 — свободный digital-only пин.
+const uint8_t PUMP_RELAY_PIN = 38;
+
 Calibration calibration;
 SensorManager sensorManager;
 Display display;
 Settings settings;
-WebServer webServer(&sensorManager, &calibration, &display, &settings);
+WaterPump pump;
+WebServer webServer(&sensorManager, &calibration, &display, &settings, &pump);
 
 bool calibrating = false;
 uint8_t activeSensorForSerial = 0; // индекс датчика для serial-калибровки
@@ -44,6 +49,8 @@ void setup() {
   calibration.begin(sensorPins, MAX_SENSORS);
   esp_task_wdt_reset();
   sensorManager.begin(&calibration, &settings);
+  esp_task_wdt_reset();
+  pump.begin(PUMP_RELAY_PIN, true); // active HIGH: HIGH = relay on
   esp_task_wdt_reset();
   display.begin();
   display.startTask();
@@ -165,6 +172,7 @@ void loop() {
   webServer.handleClient();
   ArduinoOTA.handle();
   esp_task_wdt_reset();
+  pump.tick(&sensorManager, &calibration);
   
   unsigned long now = millis();
   

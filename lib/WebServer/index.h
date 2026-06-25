@@ -67,46 +67,106 @@ body {
   background: var(--background);
   color: var(--text-primary);
   font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 0.875rem;
+  line-height: 1.428;
   min-height: 100vh;
-  padding: 24px 16px 48px;
   transition: background 0.2s, color 0.2s;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
+/* UI Shell */
+.ui-shell { display: flex; flex-direction: column; min-height: 100vh; }
+
+.shell-header {
+  height: 48px;
+  background: var(--layer-01);
+  border-bottom: 1px solid var(--border-subtle-01);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.shell-header .product-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.16px;
+  color: var(--text-primary);
+  padding: 0 16px;
+  border-left: 1px solid var(--border-subtle-01);
+  margin-left: 16px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.shell-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-/* Header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  padding: 0 8px;
+.shell-body { display: flex; flex: 1; min-height: 0; }
+
+.side-nav {
+  width: 256px;
+  background: var(--layer-01);
+  border-right: 1px solid var(--border-subtle-01);
+  padding: 8px 0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 48px;
+  align-self: flex-start;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
-.header h1 {
-  font-size: 2rem;
+.side-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
   font-weight: 400;
-  letter-spacing: -0.02em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.11s, border-color 0.11s, color 0.11s;
 }
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.side-nav-item:hover { background: var(--layer-hover-01); color: var(--text-primary); }
+.side-nav-item.active {
+  background: var(--layer-selected-01);
+  border-left-color: var(--interactive);
+  color: var(--text-primary);
+  font-weight: 600;
 }
+.side-nav-item svg { width: 16px; height: 16px; flex-shrink: 0; fill: currentColor; }
+
+.main-content {
+  flex: 1;
+  padding: 32px 40px 64px;
+  min-width: 0;
+  background: var(--background);
+}
+.content-card { max-width: 100%; }
+
+/* Header tags (kept for backward-compat) */
+.header-right { display: flex; align-items: center; gap: 4px; }
 
 /* Tags / badges */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 4px 8px;
   background: var(--layer-01);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 0.75rem;
+  font-weight: 400;
   line-height: 1.333;
   border: 1px solid var(--border-subtle-01);
 }
@@ -188,39 +248,49 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* Dashboard */
+/* Dashboard / Tile */
 .sensors-wrapper {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(256px, 1fr));
-  gap: 16px;
-}
-.card {
-  background: var(--layer-01);
+  gap: 1px;
+  background: var(--border-subtle-01);
   border: 1px solid var(--border-subtle-01);
+}
+.tile {
+  background: var(--layer-01);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.11s;
 }
-.card:hover { border-color: var(--border-strong-01); }
-.card.disabled { opacity: 0.6; }
-.card-header {
+.tile:hover { background: var(--layer-hover-01); cursor: default; }
+.tile.disabled { background: var(--layer-02); opacity: 0.6; }
+.tile:focus-within { outline: 2px solid var(--focus); outline-offset: -2px; }
+.tile-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  min-height: 32px;
 }
-.card-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.285;
+.tile-title {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.4;
   color: var(--text-primary);
 }
-.card-subtitle {
+.tile-subtitle {
   font-size: 0.75rem;
   color: var(--text-secondary);
-  margin-top: 4px;
+  font-weight: 400;
+  margin-top: 2px;
+  line-height: 1.333;
+}
+.tile-divider {
+  height: 1px;
+  background: var(--border-subtle-01);
+  margin: 0 -16px;
 }
 
 /* Inputs */
@@ -268,8 +338,9 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   font-weight: 300;
+  line-height: 1;
   color: var(--text-primary);
 }
 .gauge-label {
@@ -280,53 +351,53 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
   letter-spacing: 0.32px;
 }
 
-/* Metrics */
+/* Metrics (mini-tile inside main tile) */
 .metrics {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 1px;
   width: 100%;
+  background: var(--border-subtle-01);
 }
 .calibration-metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 1px;
   width: 100%;
-}
-.metric.metric-wide {
-  grid-column: span 1;
+  background: var(--border-subtle-01);
 }
 .metric {
-  background: var(--layer-02);
-  padding: 12px;
+  background: var(--layer-01);
+  padding: 8px 12px;
   text-align: left;
+  min-height: 48px;
 }
 .metric .label {
   display: block;
   font-size: 0.75rem;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.32px;
-  margin-bottom: 4px;
+  font-weight: 400;
+  line-height: 1.333;
+  margin-bottom: 2px;
 }
 .metric .value {
   font-size: 0.875rem;
   font-weight: 400;
   color: var(--text-primary);
+  line-height: 1.285;
 }
 
 /* Button group */
 .btn-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 1px;
 }
 .btn-group .btn {
   flex: 1 1 auto;
   min-width: 64px;
-  padding: 8px 12px;
-  font-size: 0.75rem;
-  text-transform: none;
+  padding: 7px 12px;
+  font-size: 0.875rem;
 }
 
 /* Inline status message */
@@ -342,21 +413,30 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
 .content-card {
   background: var(--layer-01);
   border: 1px solid var(--border-subtle-01);
-  padding: 24px;
+  padding: 32px;
   max-width: 720px;
 }
-.content-card h2, .content-card h3 {
+.content-card h2 {
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1.2;
+  margin-bottom: 32px;
+  color: var(--text-primary);
+}
+.content-card h3 {
   font-size: 1.25rem;
   font-weight: 400;
-  margin-bottom: 24px;
+  line-height: 1.4;
+  margin-bottom: 16px;
+  color: var(--text-primary);
 }
 .content-card h4 {
   font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--interactive);
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.32px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle-01);
 }
 
 /* Data table */
@@ -373,11 +453,9 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
 }
 .cds-table th {
   background: var(--layer-02);
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.32px;
+  color: var(--text-primary);
+  font-weight: 400;
+  font-size: 0.875rem;
 }
 .cds-table tr:hover td { background: var(--layer-hover-01); }
 
@@ -388,15 +466,18 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
 .form-group label {
   display: block;
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  font-weight: 400;
+  color: var(--text-primary);
   margin-bottom: 8px;
+  line-height: 1.333;
 }
 .form-actions {
   display: flex;
   gap: 16px;
   margin-top: 32px;
+  flex-wrap: wrap;
 }
-.form-actions button { min-width: 128px; }
+.form-actions button { min-width: 96px; }
 
 .help-text {
   font-size: 0.75rem;
@@ -430,8 +511,8 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
 .modal-content {
   background: var(--layer-01);
   border: 1px solid var(--border-subtle-01);
-  padding: 24px;
-  max-width: 384px;
+  padding: 32px;
+  max-width: 540px;
   width: 90%;
   box-shadow: var(--shadow);
 }
@@ -439,6 +520,7 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
   font-size: 1.25rem;
   font-weight: 400;
   margin-bottom: 24px;
+  color: var(--text-primary);
 }
 .modal-status {
   margin-top: 16px;
@@ -453,12 +535,20 @@ button:focus-visible, .btn:focus-visible { outline: 2px solid var(--focus); outl
   gap: 24px;
 }
 .settings-section {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border-subtle-01);
+}
+.settings-section:last-of-type {
+  margin-bottom: 16px;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 .settings-section h3 {
   font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-weight: 400;
+  line-height: 1.4;
+  margin-bottom: 16px;
   color: var(--text-primary);
 }
 .checkbox-group {
@@ -494,29 +584,45 @@ select.cds-input option {
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <h1>Moisture Monitor</h1>
-    <div class="header-right">
-      <div class="tag" id="wifiBadge">
-        <span id="wifiStatus">--</span>
-      </div>
+<div class="ui-shell">
+  <header class="shell-header">
+    <a href="#" class="header-name" style="text-decoration:none; color:var(--text-primary); display:flex; align-items:center; gap:12px; padding-right:16px;">
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor" aria-label="Polivator">
+        <path d="M16 2C11 2 7 6 7 11v6h4v-6c0-2.8 2.2-5 5-5s5 2.2 5 5v6h4v-6c0-5-4-9-9-9zM4 19h24v11H4z"/>
+      </svg>
+      <span style="font-weight: 600; font-size: 0.875rem;">Polivator</span>
+    </a>
+    <div class="product-name" id="wifiBadge" style="font-weight: 400; display:flex; align-items:center; gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M16 22a3 3 0 100 6 3 3 0 000-6zm-7.07-4.93l1.41 1.41a8 8 0 0111.32 0l1.41-1.41a10 10 0 00-14.14 0zm-3.54-3.54l1.41 1.41a12 12 0 0116.97 0l1.41-1.41a14 14 0 00-19.79 0z"/></svg>
+      <span id="wifiStatus">--</span>
+    </div>
+    <div class="shell-header-right">
       <button class="icon-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
-        <span id="themeIcon">☀️</span>
+        <svg id="themeIconSvg" width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M15 2h2v5h-2zm0 23h2v5h-2zM2 15h5v2H2zm23 0h5v2h-5zM6.4 6.4l1.4 1.4-3.5 3.5L2.9 9.9zm20.2 17l1.4 1.4-3.5 3.5-1.4-1.4zM6.4 25.6l-3.5-3.5 1.4-1.4 3.5 3.5zm20.2-17l-1.4-1.4 3.5-3.5 1.4 1.4zM16 8a8 8 0 100 16 8 8 0 000-16z"/></svg>
       </button>
       <button class="icon-btn" id="otaBtn" aria-label="OTA Update" title="OTA Update">
-        <span>⬆️</span>
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 4l-7 7h4v9h6v-9h4l-7-7zM6 26h20v2H6z"/></svg>
       </button>
-      <button class="btn-secondary" onclick="openModal()">Settings</button>
     </div>
-  </div>
+  </header>
 
-  <div class="tabs">
-    <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
-    <button class="tab" data-tab="pinout" onclick="switchTab('pinout')">Pinout</button>
-    <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
-  </div>
+  <div class="shell-body">
+    <nav class="side-nav" aria-label="Primary">
+      <button class="side-nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4l-12 8v16h8v-9h8v9h8V12L16 4z"/></svg>
+        Dashboard
+      </button>
+      <button class="side-nav-item" data-tab="pinout" onclick="switchTab('pinout')">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M28 12h-6V6a2 2 0 00-2-2H12a2 2 0 00-2 2v6H4a2 2 0 00-2 2v12a2 2 0 002 2h24a2 2 0 002-2V14a2 2 0 00-2-2zM12 6h8v6h-8V6z"/></svg>
+        Pinout
+      </button>
+      <button class="side-nav-item" data-tab="settings" onclick="switchTab('settings')">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M27 16l3-2-3-5-3 1-2-1-1-3h-5l-1 3-2 1-3-1-3 5 3 2v2l-3 2 3 5 3-1 2 1 1 3h5l1-3 2-1 3 1 3-5-3-2v-2zM16 21a5 5 0 110-10 5 5 0 010 10z"/></svg>
+        Settings
+      </button>
+    </nav>
 
+    <main class="main-content">
   <div id="tab-dashboard" class="tab-content active">
     <div class="sensors-wrapper" id="sensorContainer"></div>
     <div class="message" id="message"></div>
@@ -543,14 +649,26 @@ select.cds-input option {
       <table class="cds-table">
         <thead><tr><th>Sensor</th><th>Signal Pin</th><th>VCC</th><th>GND</th></tr></thead>
         <tbody>
-          <tr><td>Sensor 0</td><td>GPIO6</td><td>3.3V</td><td>GND</td></tr>
-          <tr><td>Sensor 1</td><td>GPIO7</td><td>3.3V</td><td>GND</td></tr>
-          <tr><td>Sensor 2</td><td>GPIO8</td><td>3.3V</td><td>GND</td></tr>
-          <tr><td>Sensor 3</td><td>GPIO9</td><td>3.3V</td><td>GND</td></tr>
-          <tr><td>Sensor 4</td><td>GPIO10</td><td>3.3V</td><td>GND</td></tr>
+          <tr><td>Sensor 0</td><td>GPIO2</td><td>3.3V</td><td>GND</td></tr>
+          <tr><td>Sensor 1</td><td>GPIO8</td><td>3.3V</td><td>GND</td></tr>
+          <tr><td>Sensor 2</td><td>GPIO12</td><td>3.3V</td><td>GND</td></tr>
+          <tr><td>Sensor 3</td><td>GPIO13</td><td>3.3V</td><td>GND</td></tr>
+          <tr><td>Sensor 4</td><td>GPIO14</td><td>3.3V</td><td>GND</td></tr>
         </tbody>
       </table>
-      <p class="help-text">Note: Default pins are GPIO6–10. Use the Dashboard to reassign pins if needed.</p>
+      <h4>Water Pump (SONGLE SRD-05VDC-SL-C relay)</h4>
+      <table class="cds-table">
+        <thead><tr><th>Signal</th><th>Connection</th></tr></thead>
+        <tbody>
+          <tr><td>Relay IN</td><td>GPIO38</td></tr>
+          <tr><td>Relay VCC</td><td>5V (ESP32 USB)</td></tr>
+          <tr><td>Relay GND</td><td>GND (common with motor PSU)</td></tr>
+          <tr><td>Pump + (red)</td><td>+12V PSU → relay COM → NO</td></tr>
+          <tr><td>Pump − (black)</td><td>GND (12V PSU)</td></tr>
+          <tr><td>Flyback diode</td><td>1N4007 across pump (+ to −)</td></tr>
+        </tbody>
+      </table>
+      <p class="help-text">Default pins can be reassigned in the Dashboard (sensors) and Settings (pump). Avoid pins 1, 3 (Serial), 4–5, 16–18, 21 (e-ink), 6–10 (flash).</p>
     </div>
   </div>
 
@@ -663,6 +781,57 @@ select.cds-input option {
         </div>
       </section>
 
+      <section class="settings-section">
+        <h3>Water Pump</h3>
+        <p class="help-text">KPHM100 12V dosing pump driven through a SONGLE SRD-05VDC-SL-C relay on GPIO38.</p>
+
+        <div class="form-row">
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="pumpAutoModeTab" />
+              <span>Auto-water when soil is dry</span>
+            </label>
+            <p class="help-text">Runs the pump briefly when any active sensor drops below the threshold.</p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pumpThresholdTab">Auto-water threshold (%)</label>
+            <input type="number" id="pumpThresholdTab" class="cds-input" min="0" max="100" value="30" />
+            <p class="help-text">If any sensor reads below this percentage, the pump starts automatically.</p>
+          </div>
+          <div class="form-group">
+            <label for="pumpFlowRateTab">Flow rate (ml/s)</label>
+            <input type="number" id="pumpFlowRateTab" class="cds-input" min="0.05" max="50" step="0.01" value="1.0" />
+            <p class="help-text">Calibrated water output. Use the "Calibrate" button below to measure it.</p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pumpManualSecondsTab">Manual run (seconds)</label>
+            <input type="number" id="pumpManualSecondsTab" class="cds-input" min="0" max="300" step="0.5" value="5" />
+            <p class="help-text">How long the pump runs when you press "Run now" below.</p>
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 12px;">
+          <button class="btn-secondary" id="pumpRunBtn" onclick="pumpRunManual()">Run now</button>
+          <button class="btn-secondary" id="pumpStopBtn" onclick="pumpStop()">Stop</button>
+          <button class="btn-secondary" id="pumpCalibrateBtn" onclick="pumpCalibratePrompt()">Calibrate</button>
+        </div>
+
+        <div class="pump-status" id="pumpStatusBox" style="margin-top: 16px; padding: 12px 16px; background: var(--layer-02); border-left: 3px solid var(--interactive); border-radius: 2px;">
+          <div style="display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px;">
+            <span><strong>State:</strong> <span id="pumpState">idle</span></span>
+            <span><strong>Remaining:</strong> <span id="pumpRemaining">0</span> ms</span>
+            <span><strong>Mode:</strong> <span id="pumpMode">manual</span></span>
+          </div>
+        </div>
+        <div class="modal-status" id="pumpStatusMsg" style="margin-top: 8px;"></div>
+      </section>
+
       <div class="form-actions">
         <button class="btn-secondary" onclick="resetSettingsDefaults()">Reset to Defaults</button>
         <button class="btn-primary" onclick="saveSettingsTab()">Save Settings</button>
@@ -682,6 +851,8 @@ select.cds-input option {
         <p class="help-text">Set the GPIO pin for each sensor in its card on the Dashboard tab.</p>
       </section>
     </div>
+    </div>
+    </main>
   </div>
 </div>
 
@@ -825,9 +996,10 @@ select.cds-input option {
   const cards = {};
 
   function switchTab(tabName) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.side-nav-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-    document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+    const btn = document.querySelector(`.side-nav-item[data-tab="${tabName}"]`);
+    if (btn) btn.classList.add('active');
     document.getElementById('tab-' + tabName).classList.add('active');
   }
   window.switchTab = switchTab;
@@ -836,12 +1008,12 @@ select.cds-input option {
     let card = cards[index];
     if (!card) {
       card = document.createElement('div');
-      card.className = 'card';
+      card.className = 'tile';
       card.innerHTML = `
-        <div class="card-header">
+        <div class="tile-header">
           <div>
             <input class="cds-input" id="name-${index}" value="${escapeHtml(data.name || '')}" />
-            <div class="card-subtitle">Sensor ${index}</div>
+            <div class="tile-subtitle">Sensor ${index}</div>
           </div>
           <input class="cds-input pin-input" id="pin-${index}" type="number" min="0" max="48" value="${escapeHtml(String(data.pin || ''))}" title="GPIO pin" />
         </div>
@@ -983,6 +1155,7 @@ select.cds-input option {
             wifiStatus.textContent = 'Disconnected';
           }
         }
+        if (data.pump) updatePumpStatus(data.pump);
       } catch(err) {
         console.error('SSE parse error', err);
       }
@@ -1136,21 +1309,24 @@ select.cds-input option {
         body: wifiFormData.toString()
       }).then(async r => { statusEl.textContent = await r.text(); });
     }
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        readInterval: parseInt(readInterval) || 2,
-        displayInterval: parseInt(displayInterval) || 30,
-        webInterval: parseInt(webInterval) || 2,
-        updatePriority: parseInt(updatePriority) || 0,
-        sleepMode: parseInt(sleepMode) || 0,
-        otaEnabled: !!otaEnabled,
-        debugEnabled: !!debugEnabled,
-        displayUnit: parseInt(displayUnit) || 0,
-        adcSamples: parseInt(adcSamples) || 10
-      })
-    }).then(() => {
+    Promise.all([
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          readInterval: parseInt(readInterval) || 2,
+          displayInterval: parseInt(displayInterval) || 30,
+          webInterval: parseInt(webInterval) || 2,
+          updatePriority: parseInt(updatePriority) || 0,
+          sleepMode: parseInt(sleepMode) || 0,
+          otaEnabled: !!otaEnabled,
+          debugEnabled: !!debugEnabled,
+          displayUnit: parseInt(displayUnit) || 0,
+          adcSamples: parseInt(adcSamples) || 10
+        })
+      }),
+      savePumpConfig(true)
+    ]).then(() => {
       if (!ssid) statusEl.textContent = 'Settings saved';
     }).catch(() => { statusEl.textContent = 'Error'; });
   };
@@ -1165,6 +1341,10 @@ select.cds-input option {
     document.getElementById('debugEnabledTab').checked = true;
     document.getElementById('displayUnitTab').value = 0;
     document.getElementById('adcSamplesTab').value = 10;
+    document.getElementById('pumpAutoModeTab').checked = false;
+    document.getElementById('pumpThresholdTab').value = 30;
+    document.getElementById('pumpFlowRateTab').value = 1.0;
+    document.getElementById('pumpManualSecondsTab').value = 5;
     document.getElementById('settingsStatusTab').textContent = 'Defaults restored. Click Save to apply.';
   };
 
@@ -1183,19 +1363,121 @@ select.cds-input option {
         if (data.adcSamples !== undefined) document.getElementById('adcSamplesTab').value = data.adcSamples;
       })
       .catch(() => {});
+    fetch('/api/pump')
+      .then(r => r.json())
+      .then(data => {
+        if (data.autoMode !== undefined) document.getElementById('pumpAutoModeTab').checked = data.autoMode;
+        if (data.threshold !== undefined) document.getElementById('pumpThresholdTab').value = data.threshold;
+        if (data.flowRate !== undefined) document.getElementById('pumpFlowRateTab').value = data.flowRate;
+        updatePumpStatus(data);
+      })
+      .catch(() => {});
   }
+
+  function updatePumpStatus(p) {
+    if (!p) return;
+    const stateEl = document.getElementById('pumpState');
+    const remEl = document.getElementById('pumpRemaining');
+    const modeEl = document.getElementById('pumpMode');
+    if (stateEl) {
+      stateEl.textContent = p.running ? 'running' : 'idle';
+      stateEl.style.color = p.running ? 'var(--support-success)' : 'var(--text-secondary)';
+    }
+    if (remEl) remEl.textContent = p.remainingMs || 0;
+    if (modeEl) modeEl.textContent = p.autoMode ? 'auto' : 'manual';
+  }
+
+  function savePumpConfig(silent) {
+    const autoMode = document.getElementById('pumpAutoModeTab').checked;
+    const threshold = parseInt(document.getElementById('pumpThresholdTab').value);
+    const flowRate = parseFloat(document.getElementById('pumpFlowRateTab').value);
+    return fetch('/api/pump/config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({autoMode, threshold, flowRate})
+    }).then(r => {
+      const msg = document.getElementById('pumpStatusMsg');
+      if (msg && !silent) msg.textContent = 'Pump settings saved';
+    }).catch(() => {
+      const msg = document.getElementById('pumpStatusMsg');
+      if (msg) msg.textContent = 'Error saving pump settings';
+    });
+  }
+
+  window.pumpRunManual = function() {
+    const seconds = parseFloat(document.getElementById('pumpManualSecondsTab').value) || 0;
+    const msg = document.getElementById('pumpStatusMsg');
+    msg.textContent = 'Starting pump...';
+    fetch('/api/pump/run', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({seconds})
+    }).then(r => r.json()).then(data => {
+      msg.textContent = 'Pump started for ' + seconds + 's (~' + (data.volumeMl || 0).toFixed(1) + ' ml)';
+    }).catch(() => { msg.textContent = 'Error starting pump'; });
+  };
+
+  window.pumpStop = function() {
+    const msg = document.getElementById('pumpStatusMsg');
+    fetch('/api/pump/stop', {method: 'POST'})
+      .then(r => r.text())
+      .then(t => { msg.textContent = t; })
+      .catch(() => { msg.textContent = 'Error stopping pump'; });
+  };
+
+  window.pumpCalibratePrompt = function() {
+    const msg = document.getElementById('pumpStatusMsg');
+    const secondsStr = prompt('Run pump for how many seconds?', '30');
+    if (!secondsStr) return;
+    const seconds = parseFloat(secondsStr);
+    if (!isFinite(seconds) || seconds < 1 || seconds > 60) {
+      msg.textContent = 'Invalid duration (1-60s)';
+      return;
+    }
+    msg.textContent = 'Pump running for ' + seconds + 's — measure the output...';
+    fetch('/api/pump/calibrate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({seconds, measuredMl: 0})
+    }).then(r => r.json()).then(data => {
+      const measuredStr = prompt('How many ml did you collect?', '');
+      if (!measuredStr) {
+        msg.textContent = 'Calibration cancelled (flowRate unchanged)';
+        return;
+      }
+      const measuredMl = parseFloat(measuredStr);
+      if (!isFinite(measuredMl) || measuredMl <= 0) {
+        msg.textContent = 'Invalid volume';
+        return;
+      }
+      const newFlow = measuredMl / seconds;
+      fetch('/api/pump/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({flowRate: newFlow})
+      }).then(() => {
+        document.getElementById('pumpFlowRateTab').value = newFlow.toFixed(2);
+        msg.textContent = 'Calibrated: ' + newFlow.toFixed(2) + ' ml/s';
+      });
+    }).catch(() => { msg.textContent = 'Calibration error'; });
+  };
+
   loadSettings();
 
   const themeToggle = document.getElementById('themeToggle');
-  const themeIcon = document.getElementById('themeIcon');
+  const themeIcon = document.getElementById('themeIconSvg');
   const currentTheme = localStorage.getItem('theme') || 'dark';
   document.documentElement.setAttribute('data-theme', currentTheme);
-  themeIcon.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+  themeIcon.innerHTML = currentTheme === 'dark'
+    ? '<path d="M16 12V4h-2v8h-6v2h6v8h2v-8h6v-2h-6zM6 22a10 10 0 1020 0 10 10 0 00-20 0zm10 8a8 8 0 110-16 8 8 0 010 16z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="22" r="3" fill="currentColor"/>'
+    : '<path d="M22 16A10 10 0 1112 6a8 8 0 0010 10z"/>';
   themeToggle.addEventListener('click', function() {
     const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-    themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    themeIcon.innerHTML = newTheme === 'dark'
+      ? '<path d="M16 12V4h-2v8h-6v2h6v8h2v-8h6v-2h-6zM6 22a10 10 0 1020 0 10 10 0 00-20 0zm10 8a8 8 0 110-16 8 8 0 010 16z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="22" r="3" fill="currentColor"/>'
+      : '<path d="M22 16A10 10 0 1112 6a8 8 0 0010 10z"/>';
   });
 
   const otaBtn = document.getElementById('otaBtn');

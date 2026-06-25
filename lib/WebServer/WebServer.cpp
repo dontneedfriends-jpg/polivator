@@ -1,5 +1,6 @@
 #include "WebServer.h"
 #include "../Settings/Settings.h"
+#include "../WaterPump/WaterPump.h"
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include "Sensor.h"
@@ -12,8 +13,8 @@
 const char* DEFAULT_AUTH_USERNAME = "admin";
 const char* DEFAULT_AUTH_PASSWORD = "admin";
 
-WebServer::WebServer(SensorManager* sensorManager, Calibration* calibration, Display* display, Settings* settings)
-  : m_sensorManager(sensorManager), m_calibration(calibration), m_display(display), m_settings(settings), server(80) {
+WebServer::WebServer(SensorManager* sensorManager, Calibration* calibration, Display* display, Settings* settings, WaterPump* pump)
+  : m_sensorManager(sensorManager), m_calibration(calibration), m_display(display), m_settings(settings), m_pump(pump), server(80) {
 }
 
 WebServer::~WebServer() {
@@ -74,6 +75,14 @@ void WebServer::sendStatusEvent(SensorManager* sensorManager) {
     doc["ssid"] = WiFi.SSID();
   } else {
     doc["ssid"] = preferences.getString("ssid", "");
+  }
+  if (m_pump) {
+    JsonObject pumpObj = doc["pump"].to<JsonObject>();
+    pumpObj["running"] = m_pump->isRunning();
+    pumpObj["remainingMs"] = m_pump->remainingMs();
+    pumpObj["autoMode"] = m_pump->isAutoModeEnabled();
+    pumpObj["threshold"] = m_pump->getAutoThreshold();
+    pumpObj["flowRate"] = m_pump->getFlowRate();
   }
   String output;
   serializeJson(doc, output);
@@ -442,6 +451,140 @@ button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cu
     request->send(200, "text/plain", "Settings saved");
   });
   
+  // POST /api/pump/run  body: {"seconds": 5}
+  server.on("/api/pump/run", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    if (!m_pump) {
+      request->send(503, "text/plain", "Pump not initialized");
+      return;
+    }
+    if (!request->contentType().startsWith("application/json")) {
+      request->send(400, "text/plain", "Content-Type must be application/json");
+      return;
+    }
+    String body = request->arg("plain");
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, body);
+    if (error) {
+      request->send(400, "text/plain", "Invalid JSON");
+      return;
+    }
+    float seconds = doc["seconds"] | 0.0f;
+    if (seconds < 0) seconds = 0;
+    if (seconds > 300) seconds = 300; // safety cap: 5 minutes
+    uint32_t durationMs = (uint32_t)(seconds * 1000.0f);
+    m_pump->run(durationMs);
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    JsonDocument out;
+    out["running"] = m_pump->isRunning();
+    out["durationMs"] = durationMs;
+    out["flowRate"] = m_pump->getFlowRate();
+    out["volumeMl"] = (float)durationMs / 1000.0f * m_pump->getFlowRate();
+    serializeJson(out, *response);
+    request->send(response);
+  });
+
+  // POST /api/pump/stop
+  server.on("/api/pump/stop", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    if (m_pump) m_pump->stop();
+    request->send(200, "text/plain", "Pump stopped");
+  });
+
+  // GET /api/pump  -> status + settings
+  server.on("/api/pump", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    JsonDocument doc;
+    doc["running"] = m_pump && m_pump->isRunning();
+    doc["remainingMs"] = m_pump ? m_pump->remainingMs() : 0;
+    doc["autoMode"] = m_pump && m_pump->isAutoModeEnabled();
+    doc["threshold"] = m_pump ? m_pump->getAutoThreshold() : 0;
+    doc["flowRate"] = m_pump ? m_pump->getFlowRate() : 0.0f;
+    serializeJson(doc, *response);
+    request->send(response);
+  });
+
+  // POST /api/pump/config  body: {"autoMode": true, "threshold": 30, "flowRate": 5.0}
+  server.on("/api/pump/config", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    if (!m_pump) {
+      request->send(503, "text/plain", "Pump not initialized");
+      return;
+    }
+    if (!request->contentType().startsWith("application/json")) {
+      request->send(400, "text/plain", "Content-Type must be application/json");
+      return;
+    }
+    String body = request->arg("plain");
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, body);
+    if (error) {
+      request->send(400, "text/plain", "Invalid JSON");
+      return;
+    }
+    if (doc["autoMode"].is<bool>()) m_pump->setAutoModeEnabled(doc["autoMode"]);
+    if (doc["threshold"].is<int>()) m_pump->setAutoThreshold(doc["threshold"]);
+    if (doc["flowRate"].is<float>() || doc["flowRate"].is<int>()) m_pump->setFlowRate(doc["flowRate"]);
+    request->send(200, "text/plain", "Pump config saved");
+  });
+
+  // POST /api/pump/calibrate  body: {"seconds": 10, "measuredMl": 50}
+  // Запускает мотор на seconds секунд, после возврата сохраняет flowRate = measuredMl / seconds.
+  server.on("/api/pump/calibrate", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {
+      request->requestAuthentication();
+      return;
+    }
+    if (!m_pump) {
+      request->send(503, "text/plain", "Pump not initialized");
+      return;
+    }
+    if (!request->contentType().startsWith("application/json")) {
+      request->send(400, "text/plain", "Content-Type must be application/json");
+      return;
+    }
+    String body = request->arg("plain");
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, body);
+    if (error) {
+      request->send(400, "text/plain", "Invalid JSON");
+      return;
+    }
+    float seconds = doc["seconds"] | 0.0f;
+    float measuredMl = doc["measuredMl"] | 0.0f;
+    if (seconds < 1.0f) seconds = 1.0f;
+    if (seconds > 60.0f) seconds = 60.0f;
+    if (measuredMl <= 0.0f) {
+      request->send(400, "text/plain", "measuredMl must be > 0");
+      return;
+    }
+    m_pump->run((uint32_t)(seconds * 1000.0f));
+    float newFlow = measuredMl / seconds;
+    m_pump->setFlowRate(newFlow);
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    JsonDocument out;
+    out["ok"] = true;
+    out["flowRate"] = newFlow;
+    out["durationSec"] = seconds;
+    out["measuredMl"] = measuredMl;
+    out["note"] = "Pump started, fill a measuring cup for 'seconds' seconds, then re-run with measuredMl.";
+    serializeJson(out, *response);
+    request->send(response);
+  });
+
   // OTA firmware update endpoint
   server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->authenticate(DEFAULT_AUTH_USERNAME, DEFAULT_AUTH_PASSWORD)) {

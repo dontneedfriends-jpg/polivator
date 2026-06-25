@@ -1,7 +1,11 @@
 #include "Display.h"
 #include <SPI.h>
+#include <Fonts/TomThumb.h>
+#include <Fonts/Picopixel.h>
 #include <Fonts/FreeMonoBold9pt7b.h>
+#include <Fonts/FreeMonoBold12pt7b.h>
 #include <Fonts/FreeMonoBold18pt7b.h>
+#include <Fonts/FreeSans9pt7b.h>
 #include <string.h>
 #include <cstdlib>
 #include <esp_task_wdt.h>
@@ -70,81 +74,226 @@ bool Display::hasChanged(uint8_t sensorCount, const int* percentages, const int*
   return false;
 }
 
+// --- Pixel-art icons 8x8 (Flipper-style monochrome) ---
+// Drop icon: 8x8, drawn in 8 bytes
+static const uint8_t icon_drop_8x8[] PROGMEM = {
+  0b00011000,
+  0b00111100,
+  0b01111110,
+  0b11111111,
+  0b11111111,
+  0b01111110,
+  0b00111100,
+  0b00011000,
+};
+// WiFi icon (3 bars) 8x8
+static const uint8_t icon_wifi_8x8[] PROGMEM = {
+  0b00000000,
+  0b00011000,
+  0b00111100,
+  0b01011010,
+  0b00011000,
+  0b00011000,
+  0b00000000,
+  0b00000000,
+};
+// WiFi off (X) 8x8
+static const uint8_t icon_wifi_off_8x8[] PROGMEM = {
+  0b00000000,
+  0b00011000,
+  0b00111100,
+  0b01011010,
+  0b00011000,
+  0b01100110,
+  0b00000000,
+  0b00000000,
+};
+// Plant/pot icon 8x8
+static const uint8_t icon_plant_8x8[] PROGMEM = {
+  0b00011000,
+  0b00111100,
+  0b01100110,
+  0b01100110,
+  0b00111100,
+  0b01100110,
+  0b11111111,
+  0b01100110,
+};
+// Gear (settings) 8x8
+static const uint8_t icon_gear_8x8[] PROGMEM = {
+  0b00111100,
+  0b01011010,
+  0b11100111,
+  0b11011011,
+  0b11011011,
+  0b11100111,
+  0b01011010,
+  0b00111100,
+};
+
+static void drawIcon(GxEPD2_3C<GxEPD2_213_Z98c, GxEPD2_213_Z98c::HEIGHT>& disp,
+                     int16_t x, int16_t y, const uint8_t* icon, uint16_t color) {
+  disp.drawBitmap(x, y, icon, 8, 8, color);
+}
+
 void Display::drawStatus(uint8_t sensorCount, const SensorConfig* configs, const int* percentages, const int* rawValues, const char* wifiStatus) {
   int w = m_display.width();
   int h = m_display.height();
 
-  // Top bar: WiFi status (small font)
-  m_display.setTextColor(GxEPD_BLACK);
-  m_display.setFont(&FreeMonoBold9pt7b);
+  // ===== STATUS BAR (top, 16 px) =====
+  const int SB_H = 16;
+  m_display.fillRect(0, 0, w, SB_H, GxEPD_BLACK);
+  m_display.setTextColor(GxEPD_WHITE);
+  m_display.setFont(&FreeSans9pt7b);
+
   m_display.setCursor(4, 12);
-  m_display.print("WiFi:");
-  m_display.print(wifiStatus);
+  m_display.print("POLIVATOR");
 
-  // Divider under top bar
-  m_display.drawLine(0, 16, w, 16, GxEPD_BLACK);
+  bool wifiOk = (strcmp(wifiStatus, "connected") == 0);
+  bool wifiAp = (strcmp(wifiStatus, "ap") == 0);
+  const uint8_t* wifiIcon = (wifiOk || wifiAp) ? icon_wifi_8x8 : icon_wifi_off_8x8;
+  drawIcon(m_display, w - 50, 4, wifiIcon, GxEPD_WHITE);
+  m_display.setCursor(w - 38, 12);
+  m_display.print(wifiOk ? "STA" : (wifiAp ? "AP" : "OFF"));
 
-  if (sensorCount == 0) {
-    m_display.setCursor(4, h - 4);
-    m_display.print("No sensors");
-    return;
-  }
+  // ===== BODY =====
+  m_display.setTextColor(GxEPD_BLACK);
+  m_display.fillRect(0, SB_H, w, h - SB_H, GxEPD_WHITE);
 
-  // Vertical column layout: only enabled sensors
   uint8_t visible[5];
   uint8_t vCount = 0;
+  uint8_t focusIdx = 0;
+  int focusPct = 200;
   for (uint8_t i = 0; i < 5 && i < sensorCount; i++) {
-    if (configs[i].enabled) visible[vCount++] = i;
+    if (configs[i].enabled) {
+      if (percentages[i] < focusPct) {
+        focusPct = percentages[i];
+        focusIdx = vCount;
+      }
+      visible[vCount++] = i;
+    }
   }
+
   if (vCount == 0) {
-    m_display.setCursor(4, h / 2);
-    m_display.print("No sensors");
+    m_display.setFont(&FreeSans9pt7b);
+    m_display.setCursor(8, h / 2);
+    m_display.print("-- no sensors --");
     return;
   }
 
-  int topY = 20;
-  int bottomY = h - 12;
-  int colH = bottomY - topY;
-  int colW = 14;
-  int gap = (w - vCount * colW) / (vCount + 1);
-  if (gap < 4) gap = 4;
+  // ===== HERO PANEL =====
+  int heroH = 60;
+  if (h < 96) heroH = h - 36;
+  if (heroH < 50) heroH = 50;
 
-  m_display.setFont(&FreeMonoBold9pt7b);
+  m_display.drawRect(0, SB_H, w, heroH, GxEPD_BLACK);
+  m_display.drawRect(2, SB_H + 2, w - 4, heroH - 4, GxEPD_BLACK);
 
-  for (uint8_t k = 0; k < vCount; k++) {
-    uint8_t i = visible[k];
-    int colX = gap + k * (colW + gap);
-    int colY = topY;
-
-    m_display.drawRect(colX, colY, colW, colH, GxEPD_BLACK);
-
+  {
+    uint8_t i = visible[focusIdx];
     int pct = percentages[i];
     if (pct < 0) pct = 0;
     if (pct > 100) pct = 100;
-    int fillH = (colH - 2) * pct / 100;
-    if (fillH > 0) {
-      m_display.fillRect(colX + 1, colY + colH - 1 - fillH, colW - 2, fillH, GxEPD_BLACK);
-    }
 
-    char label[4];
-    snprintf(label, sizeof(label), "%d", i + 1);
-    int16_t tbx, tby; uint16_t tbw, tbh;
-    m_display.getTextBounds(label, 0, 0, &tbx, &tby, &tbw, &tbh);
-    m_display.setCursor(colX + (colW - tbw) / 2, h - 2);
-    m_display.print(label);
-
+    // Big percent — FreeMonoBold18pt (right side, vertical center)
     char pctStr[8];
     if (configs[i].dryRaw != configs[i].wetRaw) {
       snprintf(pctStr, sizeof(pctStr), "%d%%", pct);
     } else {
+      snprintf(pctStr, sizeof(pctStr), "?");
+    }
+    m_display.setFont(&FreeMonoBold18pt7b);
+    int16_t tbx, tby; uint16_t tbw, tbh;
+    m_display.getTextBounds(pctStr, 0, 0, &tbx, &tby, &tbw, &tbh);
+    m_display.setCursor(w - tbw - 6, SB_H + (heroH + tbh) / 2);
+    m_display.print(pctStr);
+
+    // Drop icon (2x scale = 16x16) at top-left of left half
+    for (int dy = 0; dy < 8; dy++) {
+      for (int dx = 0; dx < 8; dx++) {
+        if (pgm_read_byte(&icon_drop_8x8[dy]) & (0x80 >> dx)) {
+          m_display.fillRect(8 + dx * 2, SB_H + 4 + dy * 2, 2, 2, GxEPD_BLACK);
+        }
+      }
+    }
+
+    // Sensor name (FreeSans9pt, below drop icon, no prefix dot)
+    m_display.setFont(&FreeSans9pt7b);
+    m_display.setCursor(8, SB_H + 28);
+    m_display.print("S");
+    m_display.print((int)(i + 1));
+    m_display.print(" ");
+    m_display.print(configs[i].name);
+  }
+
+  // Mini progress bar inside hero (4 px tall)
+  {
+    uint8_t i = visible[focusIdx];
+    int pct = percentages[i];
+    if (pct < 0) pct = 0;
+    if (pct > 100) pct = 100;
+    int barX = 6;
+    int barY = SB_H + heroH - 10;
+    int barW = w - 12;
+    m_display.drawRect(barX, barY, barW, 4, GxEPD_BLACK);
+    int fillW = (barW - 2) * pct / 100;
+    if (fillW > 0) {
+      m_display.fillRect(barX + 1, barY + 1, fillW, 2, GxEPD_BLACK);
+    }
+  }
+
+  // ===== LIST OF OTHER SENSORS =====
+  int listTop = SB_H + heroH + 2;
+  int listH = h - listTop - 2;
+  if (listH < 12) return;
+  int otherCount = vCount - 1;
+  int rowH = otherCount > 0 ? listH / otherCount : 0;
+  if (rowH > 16) rowH = 16;
+  if (rowH < 12) rowH = 12;
+
+  int drawn = 0;
+  for (uint8_t k = 0; k < vCount; k++) {
+    if (k == focusIdx) continue;
+    uint8_t i = visible[k];
+    int rowY = listTop + drawn * rowH;
+    if (rowY + rowH > h) break;
+    drawn++;
+
+    // Plant icon (8x8)
+    drawIcon(m_display, 2, rowY + 2, icon_plant_8x8, GxEPD_BLACK);
+
+    // Sensor id (S1..S5) — FreeSans9pt
+    m_display.setFont(&FreeSans9pt7b);
+    char label[4];
+    snprintf(label, sizeof(label), "S%d", i + 1);
+    m_display.setCursor(13, rowY + 9);
+    m_display.print(label);
+
+    // Percent value (right aligned) — FreeMonoBold12pt
+    char pctStr[8];
+    if (configs[i].dryRaw != configs[i].wetRaw) {
+      snprintf(pctStr, sizeof(pctStr), "%d%%", percentages[i]);
+    } else {
       snprintf(pctStr, sizeof(pctStr), "-");
     }
+    m_display.setFont(&FreeMonoBold12pt7b);
+    int16_t tbx, tby; uint16_t tbw, tbh;
     m_display.getTextBounds(pctStr, 0, 0, &tbx, &tby, &tbw, &tbh);
-    int textX = colX + colW + 2;
-    int textY = colY + (colH + tbh) / 2;
-    if (textX + tbw <= w) {
-      m_display.setCursor(textX, textY);
-      m_display.print(pctStr);
+    m_display.setCursor(w - tbw - 2, rowY + 9);
+    m_display.print(pctStr);
+
+    // Mini bar between id and percent
+    int barX = 28;
+    int barY = rowY + 4;
+    int barW = w - barX - tbw - 6;
+    int barH = 4;
+    if (barW > 4) {
+      m_display.drawRect(barX, barY, barW, barH, GxEPD_BLACK);
+      int fill = (barW - 2) * percentages[i] / 100;
+      if (fill < 0) fill = 0;
+      if (fill > 100) fill = 100;
+      fill = (barW - 2) * fill / 100;
+      if (fill > 0) m_display.fillRect(barX + 1, barY + 1, fill, barH - 2, GxEPD_BLACK);
     }
   }
 }

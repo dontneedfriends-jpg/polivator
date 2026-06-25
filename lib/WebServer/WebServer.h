@@ -11,10 +11,11 @@
 
 class Calibration;
 class Display;
+class WaterPump;
 
 class WebServer {
 public:
-  WebServer(SensorManager* sensorManager, Calibration* calibration, Display* display, Settings* settings);
+  WebServer(SensorManager* sensorManager, Calibration* calibration, Display* display, Settings* settings, WaterPump* pump);
   ~WebServer();
   bool begin();
   void handleClient();
@@ -35,6 +36,7 @@ private:
   Calibration* m_calibration;
   Display* m_display;
   Settings* m_settings;
+  WaterPump* m_pump;
   Preferences preferences;
   bool updateInProgress = false;
   uint32_t uploadStartTime = 0;
