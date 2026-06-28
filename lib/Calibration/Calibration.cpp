@@ -152,9 +152,9 @@ void Calibration::setWetValue(uint8_t index, int value) {
 
 void Calibration::resetToDefaults(uint8_t index) {
     if (index >= m_count) return;
-    // Default pin must not collide with flash/display/Serial.
-    static const uint8_t kDefaultPins[MAX_SENSORS] = {2, 8, 12, 13, 14};
-    m_configs[index].pin = kDefaultPins[index];
+    // Keep the existing pin (which may be GPIO for e-ink or ADS1115 channel for Cardputer)
+    uint8_t existingPin = m_configs[index].pin;
+    m_configs[index].pin = existingPin;
     m_configs[index].dryRaw = 3000;
     m_configs[index].wetRaw = 1200;
     m_configs[index].enabled = true;

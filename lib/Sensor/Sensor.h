@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "../Common/Types.h"
+#include "../Common/IAnalogReader.h"
 #include "../Settings/Settings.h"
 
 class Calibration; // forward declaration
@@ -11,6 +12,12 @@ class SensorManager {
 public:
     SensorManager();
     bool begin(Calibration* calibration, Settings* settings = nullptr);
+
+    /// Wire an optional IAnalogReader (e.g. ADS1115).
+    /// When set, readAll() uses it instead of the built-in ADC.
+    /// Also updates the voltage scale factor from the reader.
+    void setReader(IAnalogReader* reader);
+
     void readAll();
     int getRaw(uint8_t index);
     int getPercent(uint8_t index);
@@ -30,7 +37,9 @@ private:
     };
     SensorState sensors[MAX_SENSORS];
     Calibration* cal;
+    IAnalogReader* m_reader;
     int m_samples = 10;
+    float m_voltScale;   // V_per_LSB from the reader or built-in ADC
 };
 
 #endif // SENSOR_MANAGER_H

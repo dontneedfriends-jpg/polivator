@@ -13,7 +13,7 @@
 const char* DEFAULT_AUTH_USERNAME = "admin";
 const char* DEFAULT_AUTH_PASSWORD = "admin";
 
-WebServer::WebServer(SensorManager* sensorManager, Calibration* calibration, Display* display, Settings* settings, WaterPump* pump)
+WebServer::WebServer(SensorManager* sensorManager, Calibration* calibration, IDisplay* display, Settings* settings, WaterPump* pump)
   : m_sensorManager(sensorManager), m_calibration(calibration), m_display(display), m_settings(settings), m_pump(pump), server(80) {
 }
 

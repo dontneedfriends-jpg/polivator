@@ -7,15 +7,15 @@
 #include <Preferences.h>
 #include "../Sensor/Sensor.h"
 #include "../Common/Types.h"
+#include "../Common/IDisplay.h"
 #include "../Settings/Settings.h"
 
 class Calibration;
-class Display;
 class WaterPump;
 
 class WebServer {
 public:
-  WebServer(SensorManager* sensorManager, Calibration* calibration, Display* display, Settings* settings, WaterPump* pump);
+  WebServer(SensorManager* sensorManager, Calibration* calibration, IDisplay* display, Settings* settings, WaterPump* pump);
   ~WebServer();
   bool begin();
   void handleClient();
@@ -34,7 +34,7 @@ private:
   DNSServer dnsServer;
   SensorManager* m_sensorManager;
   Calibration* m_calibration;
-  Display* m_display;
+  IDisplay* m_display;
   Settings* m_settings;
   WaterPump* m_pump;
   Preferences preferences;

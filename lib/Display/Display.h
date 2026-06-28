@@ -3,6 +3,7 @@
 
 #include <GxEPD2_3C.h>
 #include "../Common/Types.h"
+#include "../Common/IDisplay.h"
 
 // Default SPI pins for ESP32-S3 WeActStudio tri-color 2.13" e-ink display
 #ifndef EINK_CS
@@ -24,21 +25,21 @@
 #define EINK_SCLK 18
 #endif
 
-class Display {
+class Display : public IDisplay {
 public:
   Display();
-  ~Display();
-  void begin();
+  ~Display() override;
+  void begin() override;
   // Queue an async redraw — returns immediately, actual update happens on the display task.
-  void showStatus(uint8_t sensorCount, const SensorConfig* configs, const int* percentages, const int* rawValues, const char* wifiStatus);
-  void showCalibrationScreen(const char* step = "");
-  void showMessage(const char* msg);
-  void deepSleep();
-  void forceFullRefresh();
+  void showStatus(uint8_t sensorCount, const SensorConfig* configs, const int* percentages, const int* rawValues, const char* wifiStatus) override;
+  void showCalibrationScreen(const char* step = "") override;
+  void showMessage(const char* msg) override;
+  void deepSleep() override;
+  void forceFullRefresh() override;
   // Start/stop the dedicated display task (run on core 0). Keeps web/OTA responsive during e-ink refresh.
-  void startTask();
-  void stopTask();
-  bool isBusy() const;
+  void startTask() override;
+  void stopTask() override;
+  bool isBusy() const override;
 
 private:
   // Tri-color display, but we use only BLACK and WHITE

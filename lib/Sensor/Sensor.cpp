@@ -3,7 +3,7 @@
 #include "Calibration.h"
 #include "Settings.h"
 
-SensorManager::SensorManager() : cal(nullptr) {
+SensorManager::SensorManager() : cal(nullptr), m_reader(nullptr), m_voltScale(3.3f / 4095.0f) {
 }
 
 bool SensorManager::begin(Calibration* calibration, Settings* settings) {
@@ -12,8 +12,10 @@ bool SensorManager::begin(Calibration* calibration, Settings* settings) {
         return false;
     }
     cal = calibration;
-    analogReadResolution(12);
-    analogSetAttenuation(ADC_11db);
+    if (!m_reader) {
+        analogReadResolution(12);
+        analogSetAttenuation(ADC_11db);
+    }
     int samples = settings ? settings->getAdcSamples() : 10;
     if (samples < 1) samples = 1;
     if (samples > 100) samples = 100;
@@ -42,10 +44,15 @@ void SensorManager::readAll() {
             continue;
         }
         long sum = 0;
-        for (int j = 0; j < m_samples; j++) {
-            sum += analogRead(sensors[i].pin);
+        if (m_reader) {
+            sum = m_reader->readRaw(sensors[i].pin);
+        } else {
+            for (int j = 0; j < m_samples; j++) {
+                sum += analogRead(sensors[i].pin);
+            }
+            sum /= m_samples;
         }
-        sensors[i].raw = sum / m_samples;
+        sensors[i].raw = (int)sum;
         int raw = sensors[i].raw;
         if (raw <= sensors[i].wet) {
             sensors[i].percent = 100;
@@ -56,7 +63,7 @@ void SensorManager::readAll() {
             if (range == 0) sensors[i].percent = 0;
             else sensors[i].percent = (sensors[i].dry - raw) * 100 / range;
         }
-        sensors[i].voltage = raw * (3.3f / 4095.0f);
+        sensors[i].voltage = raw * m_voltScale;
     }
 }
 
@@ -97,5 +104,14 @@ void SensorManager::setCalibration(uint8_t index, uint16_t dry, uint16_t wet) {
     if (cal) {
         cal->setDryRaw(index, dry);
         cal->setWetRaw(index, wet);
+    }
+}
+
+void SensorManager::setReader(IAnalogReader* reader) {
+    m_reader = reader;
+    if (m_reader) {
+        m_voltScale = m_reader->voltageScale();
+    } else {
+        m_voltScale = 3.3f / 4095.0f;
     }
 }
